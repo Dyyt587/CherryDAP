@@ -1,4 +1,4 @@
-BL_SDK_BASE ?= /mnt/e/repo/bouffalo_sdk
+BL_SDK_BASE ?= C:\Users\80520\Documents\GitHub\bouffalo_sdk
 
 export BL_SDK_BASE
 
