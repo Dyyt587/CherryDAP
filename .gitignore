@@ -23,6 +23,8 @@
 *.uvguix.*
 *.scvd
 *.usb.tmp
+*.i
 build
+projects/bl616/build
 .DS_Store
 .idea

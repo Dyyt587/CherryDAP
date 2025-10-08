@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+
+<html lang="en" class=" -webkit-">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>配置中...</title>
+    <style>
+        body {
+            background: #fff;
+        }
+
+        i {
+            height: 2em;
+            width: 2em;
+            border-radius: 100%;
+            background: #e74c3c;
+            display: block;
+            margin: 10em auto;
+            position: absolute;
+            left: 50%;
+            animation: spin 2s ease infinite;
+        }
+
+        i:before,
+        i:after {
+            content: '';
+            display: block;
+            position: absolute;
+            height: inherit;
+            width: inherit;
+            background: inherit;
+            border-radius: inherit;
+            animation: spin 2s ease infinite;
+        }
+
+        i:before {
+            left: -2.3em;
+        }
+
+        i:after {
+            left: 2.3em;
+        }
+
+        @keyframes spin {
+            0% {
+                top: 0;
+                transform: rotate(0deg);
+            }
+
+            50% {
+                top: -4em;
+                transform: rotate(-180deg);
+            }
+
+            100% {
+                top: 0;
+                transform: rotate(-360deg);
+            }
+        }
+    </style>
+
+<body translate="no">
+    <i>
+    </i>
+</body>
+
+</html>

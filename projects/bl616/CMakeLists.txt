@@ -21,6 +21,14 @@ sdk_add_compile_definitions(-DCFG_IP_NAPT_TIMEOUT_MS_UDP=\(620*1000\))
 sdk_add_compile_definitions(-DCFG_IP_NAPT_TIMEOUT_MS_ICMP=\(5*2*1000\))
 endif()
 
+file(GLOB_RECURSE addsource "${CMAKE_CURRENT_SOURCE_DIR}/wifi/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/config/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/custom/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/web/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/http/*.c"
+)
+
+
 target_sources(app PRIVATE
 wifi_tcp_client.c
 wifi_tcp_server.c
@@ -35,12 +43,17 @@ ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/core/usbd_core.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/port/bouffalolab/usb_dc_bl.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/class/cdc/usbd_cdc_acm.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/class/hid/usbd_hid.c
+${addsource}
 )
+
 
 sdk_add_include_directories(.)
 sdk_add_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../CherryRB)
 sdk_add_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../..)
 sdk_add_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../DAP/Include)
+sdk_add_include_directories(http)
+sdk_add_include_directories(config wifi web)
+sdk_add_include_directories(custom)
 
 sdk_add_compile_definitions(-DCONFIG_USB_HS)
 sdk_add_include_directories(../../CherryUSB/common)

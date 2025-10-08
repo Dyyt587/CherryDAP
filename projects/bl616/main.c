@@ -2,7 +2,7 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2024-03-30 11:14:00
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-05 20:55:27
+ * @LastEditTime: 2025-10-08 17:03:25
  * @FilePath: \CherryDAP\projects\bl616\main.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -33,11 +33,17 @@
 #include "board.h"
 #include "shell.h"
 
+#include "wifi_config.h"
+
+#include "bflb_timestamp.h"
+#include "custom/custom.h"
+
+#include "wifi_mgmr_cli.h"
 #define DBG_TAG "MAIN"
 #include "log.h"
 
-#define WIFI_STACK_SIZE  (1536)
-#define TASK_PRIORITY_FW (16)
+#define WIFI_STACK_SIZE   (1536)
+#define TASK_PRIORITY_FW  (16)
 #define TASK_PRIORITY_DAP (30)
 
 /****************************************************************************
@@ -58,95 +64,98 @@ static wifi_conf_t conf = {
 };
 extern void shell_init_with_task(struct bflb_device_s *shell);
 
-void wifi_event_handler(uint32_t code)
-{
-    switch (code) {
-        case CODE_WIFI_ON_INIT_DONE: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_INIT_DONE\r\n", __func__);
-            wifi_mgmr_init(&conf);
-        } break;
-        case CODE_WIFI_ON_MGMR_DONE: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_MGMR_DONE\r\n", __func__);
-        } break;
-        case CODE_WIFI_ON_SCAN_DONE: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_SCAN_DONE\r\n", __func__);
-            wifi_mgmr_sta_scanlist();
-        } break;
-        case CODE_WIFI_ON_CONNECTED: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_CONNECTED\r\n", __func__);
-            void mm_sec_keydump();
-            mm_sec_keydump();
-        } break;
-        case CODE_WIFI_ON_GOT_IP: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_GOT_IP\r\n", __func__);
-            LOG_I("[SYS] Memory left is %d Bytes\r\n", kfree_size());
-        } break;
-        case CODE_WIFI_ON_DISCONNECT: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_DISCONNECT\r\n", __func__);
-        } break;
-        case CODE_WIFI_ON_AP_STARTED: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_AP_STARTED\r\n", __func__);
-        } break;
-        case CODE_WIFI_ON_AP_STOPPED: {
-            LOG_I("[APP] [EVT] %s, CODE_WIFI_ON_AP_STOPPED\r\n", __func__);
-        } break;
-        case CODE_WIFI_ON_AP_STA_ADD: {
-            LOG_I("[APP] [EVT] [AP] [ADD] %lld\r\n", xTaskGetTickCount());
-        } break;
-        case CODE_WIFI_ON_AP_STA_DEL: {
-            LOG_I("[APP] [EVT] [AP] [DEL] %lld\r\n", xTaskGetTickCount());
-        } break;
-        default: {
-            LOG_I("[APP] [EVT] Unknown code %u \r\n", code);
-        }
-    }
-}
+// int wifi_start_firmware_task(void)
+// {
+//     LOG_I("Starting wifi ...\r\n");
 
-int wifi_start_firmware_task(void)
-{
-    LOG_I("Starting wifi ...\r\n");
+//     /* enable wifi clock */
 
-    /* enable wifi clock */
+//     GLB_PER_Clock_UnGate(GLB_AHB_CLOCK_IP_WIFI_PHY | GLB_AHB_CLOCK_IP_WIFI_MAC_PHY | GLB_AHB_CLOCK_IP_WIFI_PLATFORM);
+//     GLB_AHB_MCU_Software_Reset(GLB_AHB_MCU_SW_WIFI);
 
-    GLB_PER_Clock_UnGate(GLB_AHB_CLOCK_IP_WIFI_PHY | GLB_AHB_CLOCK_IP_WIFI_MAC_PHY | GLB_AHB_CLOCK_IP_WIFI_PLATFORM);
-    GLB_AHB_MCU_Software_Reset(GLB_AHB_MCU_SW_WIFI);
+//     /* Enable wifi irq */
 
-    /* Enable wifi irq */
+//     extern void interrupt0_handler(void);
+//     bflb_irq_attach(WIFI_IRQn, (irq_callback)interrupt0_handler, NULL);
+//     bflb_irq_enable(WIFI_IRQn);
 
-    extern void interrupt0_handler(void);
-    bflb_irq_attach(WIFI_IRQn, (irq_callback)interrupt0_handler, NULL);
-    bflb_irq_enable(WIFI_IRQn);
+//     xTaskCreate(wifi_main, (char *)"fw", WIFI_STACK_SIZE, NULL, TASK_PRIORITY_FW, &wifi_fw_task);
 
-    xTaskCreate(wifi_main, (char *)"fw", WIFI_STACK_SIZE, NULL, TASK_PRIORITY_FW, &wifi_fw_task);
-
-    return 0;
-}
+//     return 0;
+// }
 
 void dap_main(void *param)
 {
-        chry_dap_init(0, 0x20072000);
+    chry_dap_init(0, 0x20072000);
     while (1) {
         chry_dap_handle();
         chry_dap_usb2uart_handle();
+        vTaskDelay(1);
     }
 }
-
 
 int dap_start_firmware_task(void)
 {
     LOG_I("Starting dap ...\r\n");
 
-
     xTaskCreate(dap_main, (char *)"dap", WIFI_STACK_SIZE, NULL, TASK_PRIORITY_DAP, &dap_fw_task);
 
     return 0;
+}
+static config_event event = NULL;
+
+#define NOTIFY_EVENT(msg, ...)         \
+    do {                               \
+        if (NULL != event) {           \
+            event(msg, ##__VA_ARGS__); \
+        }                              \
+    } while (0)
+
+void wifi_config1(void *param)
+{
+    static char ssid[] = "@Dyyt";
+    static char pass[] = "123456789";
+    flash_set_wifi_info(ssid, pass);
+    flash_get_data(ssid, KEY_SSID, 16);
+    flash_get_data(pass, KEY_PASS, 16);
+    LOG_I("flash read wifi info: [s: %s,k: %s]\r\n", ssid, pass);
+
+    vTaskDelay(10);
+
+    //只需要检查ssid，密码可以是空的
+    if (NULL != ssid && strlen(ssid) > 0 && 1) {
+        NOTIFY_EVENT("CONNECTING(%s)\n", ssid);
+        LOG_I("find wifi info: [s: %s,k: %s]\r\n", ssid, pass);
+        //找到ssid，尝试连接wifi
+        connect_wifi(ssid, pass);
+    } else {
+        LOG_I("ssid not find start...\r\n");
+        //没有连接过wifi启动配网流程
+        vTaskDelay(100);
+        char *argv[] = {"wifi_ap_start","-s","Cubex DAPLink"};
+        wifi_mgmr_ap_start_cmd(3,argv);
+        vTaskDelay(100);
+        start_http_server();
+
+    }
+    uint32_t old_code = -1;
+    while (1) {
+        //printf("wifi_config\r\n");
+        vTaskDelay(1);
+        uint32_t new_code = get_wifi_event_code();
+        if (old_code != new_code) {
+            //状态改变
+            old_code = new_code;
+            //处理wifi事件
+           // wifi_event(new_code);
+        }
+    }
 }
 int main(void)
 {
     board_init();
 
     uartx_preinit();
-
 
     uart0 = bflb_device_get_by_name("uart0");
     shell_init_with_task(uart0);
@@ -158,9 +167,22 @@ int main(void)
 
     LOG_I("PHY RF init success!\r\n");
 
+    // tcpip_init(NULL, NULL);
+    // wifi_start_firmware_task();
+
     tcpip_init(NULL, NULL);
-    wifi_start_firmware_task();
-    dap_start_firmware_task();  
+    //初始化wifi
+    wifi_init();
+
+    //初始化flash
+    bflb_mtd_init();
+    easyflash_init();
+
+    printf("wifi_config\r\n");
+
+    xTaskCreate(wifi_config1, "wifi_config", 512, NULL, 8, NULL);
+
+    dap_start_firmware_task();
     vTaskStartScheduler();
     while (1) {
         // chry_dap_handle();

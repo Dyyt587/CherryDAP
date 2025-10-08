@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        WIFI 配网
+    </title>
+    <meta name="viewport" content="width=device-width,inital-scale=1">
+</head>
+<style type="text/css">
+    .input {
+        display: block;
+        margin-top: 10px;
+    }
+
+    .input span {
+        width: 100px;
+        float: left;
+        float: left;
+        height: 36px;
+    }
+
+    .input input {
+        height: 30px;
+        width: 200px;
+    }
+
+    .btn {
+        width: 120px;
+        height: 35px;
+        background-color: #16a085;
+        border: 0px;
+        color: #ffffff;
+        margin-top: 150px;
+        margin-left: 100px;
+        border-radius: 10px;
+        box-sizing: border-box;
+    }
+</style>
+
+<body>
+    <form method="POST" action="configwifi">
+        <label class="input">
+            <span>WiFi 名称</span>
+            <input type="text" name="ssid" required>
+        </label>
+        <label class="input">
+            <span>WiFi 密码</span>
+            <input type="password" name="pass">
+        </label>
+        <input class="btn" type="submit" value="连接">
+    </form>
+</body>
+
+</html>

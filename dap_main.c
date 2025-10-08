@@ -1,5 +1,6 @@
 #include "dap_main.h"
-
+#define DBG_TAG "DAP"
+#include "log.h"
 #define CMSIS_DAP_INTERFACE_SIZE (9 + 7 + 7)
 #define CUSTOM_HID_LEN           (9 + 9 + 7 + 7)
 
@@ -326,6 +327,7 @@ static volatile uint8_t USB_ResponseIdle = 1;    // Response Idle  Flag
 
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t USB_Request[DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Request  Buffer
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t USB_Response[DAP_PACKET_COUNT][DAP_PACKET_SIZE]; // Response Buffer
+static uint16_t USB_ReqSize[DAP_PACKET_COUNT];                                                        // Request Size
 static uint16_t USB_RespSize[DAP_PACKET_COUNT];                                                        // Response Size
 
 volatile struct cdc_line_coding g_cdc_lincoding;
@@ -335,6 +337,7 @@ volatile uint8_t config_uart_transfer = 0;
 USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t uartrx_ringbuffer[CONFIG_UARTRX_RINGBUF_SIZE];
 USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t usbrx_ringbuffer[CONFIG_USBRX_RINGBUF_SIZE];
 USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t usb_tmpbuffer[DAP_PACKET_SIZE];
+USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t tcp_tmpbuffer[DAP_PACKET_SIZE];
 
 static volatile uint8_t usbrx_idle_flag = 0;
 static volatile uint8_t usbtx_idle_flag = 0;
@@ -382,6 +385,7 @@ void usbd_event_handler(uint8_t busid, uint8_t event)
 void dap_out_callback(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
+    USB_ReqSize[USB_RequestIndexI] = nbytes;
     if (USB_Request[USB_RequestIndexI][0] == ID_DAP_TransferAbort) {
         DAP_TransferAbort = 1U;
     } else {
@@ -574,6 +578,14 @@ void chry_dap_handle(void)
             }
         }
 
+        extern int tcp_sock;
+        if(tcp_sock >=0){
+            //LOG_I("send data to tcp\r\n");
+            int ret = write(tcp_sock, USB_Request[USB_RequestIndexO], USB_ReqSize[USB_RequestIndexO]);
+        }else{
+            //LOG_I("no tcp socket find\r\n");
+        }
+
         // Execute DAP Command (process request and prepare response)
         USB_RespSize[USB_ResponseIndexI] =
             (uint16_t)DAP_ExecuteCommand(USB_Request[USB_RequestIndexO], USB_Response[USB_ResponseIndexI]);
@@ -662,6 +674,15 @@ void chry_dap_usb2uart_handle(void)
             usbtx_idle_flag = 0;
             /* start first transfer */
             buffer = chry_ringbuffer_linear_read_setup(&g_uartrx, &size);
+
+            extern int tcp_sock;
+            if(tcp_sock >=0){
+                LOG_I("send data to tcp\r\n");
+                int ret = write(tcp_sock, buffer, size);
+            }else{
+                LOG_I("no tcp socket find\r\n");
+            }
+
             usbd_ep_start_write(0, CDC_IN_EP, buffer, size);
         }
     }
@@ -683,6 +704,15 @@ void chry_dap_usb2uart_handle(void)
             usbd_ep_start_read(0, CDC_OUT_EP, usb_tmpbuffer, DAP_PACKET_SIZE);
         }
     }
+    extern int tcp_sock;
+    // if(tcp_sock >=0)
+    // {
+    //     int reced = read(tcp_sock, tcp_tmpbuffer, DAP_PACKET_SIZE);
+    //     if(reced >0){
+    //         chry_ringbuffer_write(&g_usbrx, tcp_tmpbuffer, reced);
+    //     }
+    // }
+
 }
 
 /* implment by user */

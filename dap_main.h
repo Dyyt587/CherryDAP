@@ -9,6 +9,14 @@
 #include "DAP_config.h"
 #include "DAP.h"
 
+#include <sys/socket.h>
+#include <lwip/api.h>
+#include <lwip/arch.h>
+#include <lwip/opt.h>
+#include <lwip/inet.h>
+#include <lwip/errno.h>
+#include <netdb.h>
+
 #define DAP_IN_EP  0x81
 #define DAP_OUT_EP 0x02
 
