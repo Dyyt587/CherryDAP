@@ -65,7 +65,7 @@ This information includes:
 /// require 2 processor cycles for a I/O Port Write operation.  If the Debug Unit uses
 /// a Cortex-M0+ processor with high-speed peripheral I/O only 1 processor cycle might be
 /// required.
-#define IO_PORT_WRITE_CYCLES 2U ///< I/O Cycles: 2=default, 1=Cortex-M0+ fast I/0.
+#define IO_PORT_WRITE_CYCLES 3U ///< I/O Cycles: 2=default, 1=Cortex-M0+ fast I/0.
 
 /// Indicate that Serial Wire Debug (SWD) communication mode is available at the Debug Access Port.
 /// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
@@ -98,7 +98,7 @@ This information includes:
 /// This configuration settings is used to optimize the communication performance with the
 /// debugger and depends on the USB peripheral. For devices with limited RAM or USB buffer the
 /// setting can be reduced (valid range is 1 .. 255).
-#define DAP_PACKET_COUNT 16U ///< Specifies number of packets buffered.
+#define DAP_PACKET_COUNT 128U ///< Specifies number of packets buffered.
 
 /// Indicate that UART Serial Wire Output (SWO) trace is available.
 /// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
@@ -362,10 +362,12 @@ __STATIC_INLINE uint32_t bflb_gpio_read_fast(struct bflb_device_s *dev, uint8_t 
 
 __STATIC_INLINE void bflb_gpio_set_fast1( uint8_t pin)
 {
+    __asm volatile("nop");
     (*(volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAEC) + ((pin >> 5) << 2)) = (1 << (pin & 0x1f)));
 }
 __STATIC_INLINE void bflb_gpio_reset_fast1( uint8_t pin)
 {
+     __asm volatile("nop");
     (*(volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((pin >> 5) << 2)) = (1 << (pin & 0x1f)));
 }
 __STATIC_INLINE uint32_t bflb_gpio_read_fast1(uint8_t pin)
@@ -451,8 +453,9 @@ Set the SWCLK/TCK DAP hardware I/O pin to high level.
 */
 __STATIC_FORCEINLINE void PIN_SWCLK_TCK_SET(void)
 {
-    g_gpio_swclk_set_fast = (volatile uint32_t *)(uintptr_t)(g_gpio->reg_base + (0xAEC) + ((PIN_SWCLK_TCK >> 5) << 2));
-    *g_gpio_swclk_set_fast = (1 << (PIN_SWCLK_TCK & 0x1f));
+    // g_gpio_swclk_set_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAEC) + ((PIN_SWCLK_TCK >> 5) << 2));
+    // *g_gpio_swclk_set_fast = (1 << (PIN_SWCLK_TCK & 0x1f));
+    bflb_gpio_set_fast1(PIN_SWCLK_TCK);
     //bflb_gpio_set_fast(g_gpio, PIN_SWCLK_TCK);
     //    bflb_gpio_set_fast1(PIN_SWCLK_TCK);
 
@@ -463,8 +466,9 @@ Set the SWCLK/TCK DAP hardware I/O pin to low level.
 */
 __STATIC_FORCEINLINE void PIN_SWCLK_TCK_CLR(void)
 {
-    g_gpio_swclk_reset_fast = (volatile uint32_t *)(uintptr_t)(g_gpio->reg_base + (0xAF4) + ((PIN_SWCLK_TCK >> 5) << 2));
-    *g_gpio_swclk_reset_fast = (1 << (PIN_SWCLK_TCK & 0x1f));
+    // g_gpio_swclk_reset_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((PIN_SWCLK_TCK >> 5) << 2));
+    // *g_gpio_swclk_reset_fast = (1 << (PIN_SWCLK_TCK & 0x1f));
+    bflb_gpio_reset_fast1(PIN_SWCLK_TCK);
     //bflb_gpio_reset_fast(g_gpio, PIN_SWCLK_TCK);
    // bflb_gpio_reset_fast1(PIN_SWCLK_TCK);
 }
@@ -484,10 +488,11 @@ Set the SWDIO/TMS DAP hardware I/O pin to high level.
 */
 __STATIC_FORCEINLINE void PIN_SWDIO_TMS_SET(void)
 {
-    // g_gpio_swdio_set_fast = (volatile uint32_t *)(uintptr_t)(g_gpio->reg_base + (0xAEC) + ((PIN_SWDIO_TMS >> 5) << 2));
+    // g_gpio_swdio_set_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAEC) + ((PIN_SWDIO_TMS >> 5) << 2));
     // *g_gpio_swdio_set_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
-    //bflb_gpio_set_fast(g_gpio, PIN_SWDIO_TMS);
     bflb_gpio_set_fast1(PIN_SWDIO_TMS);
+    //bflb_gpio_set_fast(g_gpio, PIN_SWDIO_TMS);
+    //bflb_gpio_set_fast1(PIN_SWDIO_TMS);
 }
 
 /** SWDIO/TMS I/O pin: Set Output to Low.
@@ -495,9 +500,11 @@ Set the SWDIO/TMS DAP hardware I/O pin to low level.
 */
 __STATIC_FORCEINLINE void PIN_SWDIO_TMS_CLR(void)
 {
-    g_gpio_swdio_reset_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((PIN_SWDIO_TMS >> 5) << 2));
-    *g_gpio_swdio_reset_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
+    // g_gpio_swdio_reset_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((PIN_SWDIO_TMS >> 5) << 2));
+    // *g_gpio_swdio_reset_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
+    bflb_gpio_reset_fast1(PIN_SWDIO_TMS);
     //bflb_gpio_reset_fast(g_gpio, PIN_SWDIO_TMS);
+    //bflb_gpio_reset_fast1(PIN_SWDIO_TMS);
 }
 
 /** SWDIO I/O pin: Get Input (used in SWD mode only).
@@ -505,7 +512,7 @@ __STATIC_FORCEINLINE void PIN_SWDIO_TMS_CLR(void)
 */
 __STATIC_FORCEINLINE uint32_t PIN_SWDIO_IN(void)
 {
-    return !!bflb_gpio_read_fast(g_gpio, PIN_SWDIO_TMS);
+    return !!bflb_gpio_read_fast1(PIN_SWDIO_TMS);
 }
 
 /** SWDIO I/O pin: Set Output (used in SWD mode only).
@@ -514,9 +521,14 @@ __STATIC_FORCEINLINE uint32_t PIN_SWDIO_IN(void)
 __STATIC_FORCEINLINE void PIN_SWDIO_OUT(uint32_t bit)
 {
     if (bit & 0x01) {
-        *g_gpio_swdio_set_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
+        // g_gpio_swdio_set_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAEC) + ((PIN_SWDIO_TMS >> 5) << 2));
+        // *g_gpio_swdio_set_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
+        bflb_gpio_set_fast1(PIN_SWDIO_TMS);
     } else {
-        *g_gpio_swdio_reset_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
+        bflb_gpio_reset_fast1(PIN_SWDIO_TMS);
+
+        // g_gpio_swdio_reset_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((PIN_SWDIO_TMS >> 5) << 2));
+        // *g_gpio_swdio_reset_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
     }
 }
 
@@ -554,7 +566,7 @@ __STATIC_FORCEINLINE void PIN_SWDIO_OUT_ENABLE(void)
     #endif
     
     // 直接写入预计算的配置值
-    *(volatile uint32_t *)(uintptr_t)(g_gpio->reg_base + 0x8C4 + (PIN_SWDIO_TMS << 2)) = swdio_output_cfg;
+    *(volatile uint32_t *)(uintptr_t)((0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2)) = swdio_output_cfg;
 }
 
 /** SWDIO I/O pin: Switch to Input mode (used in SWD mode only).
@@ -579,7 +591,7 @@ __STATIC_FORCEINLINE void PIN_SWDIO_OUT_DISABLE(void)
     *(volatile uint32_t *)(0x2000f038) &= ~(1 << 21);
 #endif
     // 直接写入预计算的配置值
-    uint32_t cfg_address = g_gpio->reg_base + 0x8C4 + (PIN_SWDIO_TMS << 2);
+    uint32_t cfg_address = (0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2);
     *(volatile uint32_t *)(uintptr_t)cfg_address = swdio_input_cfg;
 
     // bflb_gpio_deinit(g_gpio, PIN_SWDIO_TMS);
