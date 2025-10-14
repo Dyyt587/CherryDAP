@@ -4,6 +4,9 @@
 [submodule "CherryRB"]
 	path = CherryRB
 	url = https://github.com/cherry-embedded/CherryRB.git
+[submodule "easy_button"]
+	path = easy_button
+	url = https://github.com/bobwenstudy/easy_button.git
 [submodule "projects/HSLink-Pro/third_party_components/tlsf/tlsf"]
 	path = projects/HSLink-Pro/third_party_components/tlsf/tlsf
 	url = https://github.com/mattconte/tlsf.git
