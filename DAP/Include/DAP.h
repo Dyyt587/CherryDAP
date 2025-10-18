@@ -331,7 +331,7 @@ void Set_Clock_Delay(uint32_t clock);
 #define DELAY_SLOW_CYCLES       3U      // Number of cycles for one iteration
 #endif
 
-__STATIC_FORCEINLINE void PIN_DELAY_SLOW (uint32_t delay) {
+__attribute__((always_inline)) static inline void PIN_DELAY_SLOW (uint32_t delay) {
   volatile uint32_t count = delay;
     do {
         count -= 1;
@@ -342,7 +342,7 @@ __STATIC_FORCEINLINE void PIN_DELAY_SLOW (uint32_t delay) {
 #ifndef DELAY_FAST_CYCLES
 #define DELAY_FAST_CYCLES       0U      // Number of cycles: 0..3
 #endif
-__STATIC_FORCEINLINE void PIN_DELAY_FAST (void) {
+__attribute__((always_inline)) static inline void PIN_DELAY_FAST (void) {
 #if (DELAY_FAST_CYCLES >= 1U)
   __NOP();
 #endif

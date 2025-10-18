@@ -8,6 +8,7 @@
 #include "chry_ringbuffer.h"
 #include "DAP_config.h"
 #include "DAP.h"
+#include "tinyprintf.h"
 
 #include <sys/socket.h>
 #include <lwip/api.h>

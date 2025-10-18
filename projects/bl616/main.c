@@ -2,12 +2,13 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2024-03-30 11:14:00
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-09 19:50:35
+ * @LastEditTime: 2025-10-19 01:56:00
  * @FilePath: \CherryDAP\projects\bl616\main.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 #include "board.h"
 #include "dap_main.h"
+#include "ebtn.h"
 #include "bflb_gpio.h"
 #include "usb2uart.h"
 
@@ -58,10 +59,13 @@ static struct bflb_device_s *uart0;
 
 static TaskHandle_t wifi_fw_task;
 static TaskHandle_t dap_fw_task;
+static TaskHandle_t button_task;
 
 static wifi_conf_t conf = {
     .country_code = "CN",
 };
+
+int flag_cdc_shell=0;
 extern void shell_init_with_task(struct bflb_device_s *shell);
 
 // int wifi_start_firmware_task(void)
@@ -90,7 +94,82 @@ void dap_main(void *param)
     while (1) {
         chry_dap_handle();
         chry_dap_usb2uart_handle();
-        //vTaskDelay(1);
+        vTaskDelay(1);
+    }
+}
+
+
+typedef enum
+{
+    USER_BUTTON_0 = 0,
+    USER_BUTTON_MAX,
+
+} user_button_t;
+
+/* User defined settings */
+static const ebtn_btn_param_t defaul_ebtn_param = EBTN_PARAMS_INIT(20, 0, 20, 300, 200, 500, 10);
+
+static ebtn_btn_t btns[] = {
+        EBTN_BUTTON_INIT(USER_BUTTON_0, &defaul_ebtn_param),
+
+};
+
+
+/**
+ * \brief           Get input state callback
+ * \param           btn: Button instance
+ * \return          `1` if button active, `0` otherwise
+ */
+uint8_t prv_btn_get_state(struct ebtn_btn *btn)
+{
+    /*
+     * Function will return negative number if button is pressed,
+     * or zero if button is releases
+     */
+ 
+    return  bflb_gpio_read(g_gpio, GPIO_PIN_2);
+}
+
+/**
+ * \brief           Button event
+ *
+ * \param           btn: Button instance
+ * \param           evt: Button event
+ */
+void prv_btn_event(struct ebtn_btn *btn, ebtn_evt_t evt)
+{
+    if(btn->key_id==USER_BUTTON_0 && evt==EBTN_EVT_ONCLICK){
+        if(flag_cdc_shell==1)
+        {
+            flag_cdc_shell=0;
+            shell_set_print((void (*)(char *fmt, ...))printf);
+
+        }else{
+            shell_set_print((void (*)(char *fmt, ...))tfp_printf);
+            flag_cdc_shell=1;
+        }
+        LOG_I("flag_cdc_shell  = %d\r\n", flag_cdc_shell);
+        tfp_printf("flag_cdc_shell  = %d\r\n", flag_cdc_shell);
+       // NVIC_SystemReset();
+    }
+
+}
+
+void button_main(void *param)
+{
+    //extern struct bflb_device_s *g_gpio;
+    LOG_I("button_main ...\r\n");
+
+    bflb_gpio_init(g_gpio, GPIO_PIN_2, GPIO_INPUT | GPIO_PULLDOWN | GPIO_SMT_EN | GPIO_DRV_0);  
+    ebtn_init(btns, EBTN_ARRAY_SIZE(btns), 0, 0,
+              prv_btn_get_state, prv_btn_event);
+              static int tick=0;
+    while (1) {
+
+        ebtn_process(tick);
+        tick+=5;
+        vTaskDelay(5);
+ 
     }
 }
 
@@ -151,9 +230,18 @@ void wifi_config1(void *param)
         }
     }
 }
+
+void stdout_putf ( void* p, char c)
+{
+    extern chry_ringbuffer_t g_usbshell;
+    chry_ringbuffer_write(&g_usbshell, &c, 1);
+
+}
 int main(void)
 {
     board_init();
+
+      init_printf(NULL, stdout_putf);
 
     uartx_preinit();
 
@@ -179,6 +267,7 @@ int main(void)
     easyflash_init();
 
     printf("wifi_config\r\n");
+    xTaskCreate(button_main, (char *)"button", 512, NULL, 15, &button_task);
 
     xTaskCreate(wifi_config1, "wifi_config", 512, NULL, 8, NULL);
 

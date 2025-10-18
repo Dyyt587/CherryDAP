@@ -336,6 +336,9 @@ volatile uint8_t config_uart_transfer = 0;
 
 USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t uartrx_ringbuffer[CONFIG_UARTRX_RINGBUF_SIZE];
 USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t usbrx_ringbuffer[CONFIG_USBRX_RINGBUF_SIZE];
+
+USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t usbshell_ringbuffer[CONFIG_USBRX_RINGBUF_SIZE];
+
 USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t usb_tmpbuffer[DAP_PACKET_SIZE];
 USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t tcp_tmpbuffer[DAP_PACKET_SIZE];
 
@@ -345,6 +348,7 @@ static volatile uint8_t uarttx_idle_flag = 0;
 
 USB_NOCACHE_RAM_SECTION chry_ringbuffer_t g_uartrx;
 USB_NOCACHE_RAM_SECTION chry_ringbuffer_t g_usbrx;
+USB_NOCACHE_RAM_SECTION chry_ringbuffer_t g_usbshell;
 
 void usbd_event_handler(uint8_t busid, uint8_t event)
 {
@@ -423,7 +427,14 @@ void dap_in_callback(uint8_t busid, uint8_t ep, uint32_t nbytes)
 void usbd_cdc_acm_bulk_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
-    chry_ringbuffer_write(&g_usbrx, usb_tmpbuffer, nbytes);
+#include "shell.h"
+    extern int flag_cdc_shell;
+    if(flag_cdc_shell){
+        shell_exe_cmd(usb_tmpbuffer, nbytes);
+    }else{
+        chry_ringbuffer_write(&g_usbrx, usb_tmpbuffer, nbytes);
+
+    }
     if (chry_ringbuffer_get_free(&g_usbrx) >= DAP_PACKET_SIZE) {
         usbd_ep_start_read(0, CDC_OUT_EP, usb_tmpbuffer, DAP_PACKET_SIZE);
     } else {
@@ -436,8 +447,14 @@ void usbd_cdc_acm_bulk_in(uint8_t busid, uint8_t ep, uint32_t nbytes)
     (void)busid;
     uint32_t size;
     uint8_t *buffer;
+    extern int flag_cdc_shell;
+if(flag_cdc_shell){
+    chry_ringbuffer_linear_read_done(&g_usbshell, nbytes);
 
+}else{
     chry_ringbuffer_linear_read_done(&g_uartrx, nbytes);
+
+}
     if ((nbytes % DAP_PACKET_SIZE) == 0 && nbytes) {
         /* send zlp */
         usbd_ep_start_write(0, CDC_IN_EP, NULL, 0);
@@ -526,6 +543,7 @@ void chry_dap_init(uint8_t busid, uint32_t reg_base)
 {
     chry_ringbuffer_init(&g_uartrx, uartrx_ringbuffer, CONFIG_UARTRX_RINGBUF_SIZE);
     chry_ringbuffer_init(&g_usbrx, usbrx_ringbuffer, CONFIG_USBRX_RINGBUF_SIZE);
+    chry_ringbuffer_init(&g_usbshell, usbshell_ringbuffer, CONFIG_USBRX_RINGBUF_SIZE);
 
     DAP_Setup();
 
@@ -670,7 +688,24 @@ void chry_dap_usb2uart_handle(void)
 
     /* uartrx to usb tx */
     if (usbtx_idle_flag) {
-        if (chry_ringbuffer_get_used(&g_uartrx)) {
+        extern int flag_cdc_shell;
+        if(flag_cdc_shell){
+            if (chry_ringbuffer_get_used(&g_usbshell)) {
+            usbtx_idle_flag = 0;
+            /* start first transfer */
+            buffer = chry_ringbuffer_linear_read_setup(&g_usbshell, &size);
+
+            extern int tcp_sock;
+            if(tcp_sock >=0){
+                LOG_I("send data to tcp\r\n");
+                int ret = write(tcp_sock, buffer, size);
+            }else{
+                LOG_I("no tcp socket find\r\n");
+            }
+            usbd_ep_start_write(0, CDC_IN_EP, buffer, size);
+        }
+         }else{
+            if (chry_ringbuffer_get_used(&g_uartrx)) {
             usbtx_idle_flag = 0;
             /* start first transfer */
             buffer = chry_ringbuffer_linear_read_setup(&g_uartrx, &size);
@@ -685,6 +720,9 @@ void chry_dap_usb2uart_handle(void)
 
             usbd_ep_start_write(0, CDC_IN_EP, buffer, size);
         }
+ 
+        }
+        
     }
 
     /* usbrx to uart tx */
