@@ -45,8 +45,8 @@ This information includes:
 
 #include "stdint.h"
 
-#ifndef __STATIC_INLINE
-#define __STATIC_INLINE static inline
+#ifndef __STATIC_FORCEINLINE
+#define __STATIC_FORCEINLINE static inline
 #endif
 #ifndef __STATIC_FORCEINLINE
 #define __STATIC_FORCEINLINE __attribute__((always_inline)) static inline
@@ -163,7 +163,7 @@ static const char TargetBoardName[] = TARGET_BOARD_NAME;
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetVendorString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetVendorString(char *str)
 {
     (void)str;
     return (0U);
@@ -173,7 +173,7 @@ __STATIC_INLINE uint8_t DAP_GetVendorString(char *str)
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetProductString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetProductString(char *str)
 {
     (void)str;
     return (0U);
@@ -183,7 +183,7 @@ __STATIC_INLINE uint8_t DAP_GetProductString(char *str)
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetSerNumString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetSerNumString(char *str)
 {
     (void)str;
     return (0U);
@@ -193,7 +193,7 @@ __STATIC_INLINE uint8_t DAP_GetSerNumString(char *str)
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetTargetDeviceVendorString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetTargetDeviceVendorString(char *str)
 {
 #if TARGET_FIXED != 0
     uint8_t len;
@@ -211,7 +211,7 @@ __STATIC_INLINE uint8_t DAP_GetTargetDeviceVendorString(char *str)
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetTargetDeviceNameString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetTargetDeviceNameString(char *str)
 {
 #if TARGET_FIXED != 0
     uint8_t len;
@@ -229,7 +229,7 @@ __STATIC_INLINE uint8_t DAP_GetTargetDeviceNameString(char *str)
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetTargetBoardVendorString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetTargetBoardVendorString(char *str)
 {
 #if TARGET_FIXED != 0
     uint8_t len;
@@ -247,7 +247,7 @@ __STATIC_INLINE uint8_t DAP_GetTargetBoardVendorString(char *str)
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetTargetBoardNameString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetTargetBoardNameString(char *str)
 {
 #if TARGET_FIXED != 0
     uint8_t len;
@@ -265,7 +265,7 @@ __STATIC_INLINE uint8_t DAP_GetTargetBoardNameString(char *str)
 \param str Pointer to buffer to store the string (max 60 characters).
 \return String length (including terminating NULL character) or 0 (no string).
 */
-__STATIC_INLINE uint8_t DAP_GetProductFirmwareVersionString(char *str)
+__STATIC_FORCEINLINE uint8_t DAP_GetProductFirmwareVersionString(char *str)
 {
     (void)str;
     return (0U);
@@ -346,36 +346,41 @@ static volatile uint32_t *g_gpio_swdio_reset_fast = 0;
 static volatile uint32_t *g_gpio_tdi_reset_fast = 0;
 static volatile uint32_t *g_gpio_nreset_reset_fast = 0;
 
-__STATIC_INLINE void bflb_gpio_set_fast(struct bflb_device_s *dev, uint8_t pin)
+__STATIC_FORCEINLINE void bflb_gpio_set_fast(struct bflb_device_s *dev, uint8_t pin)
 {
     (*(volatile uint32_t *)(uintptr_t)(dev->reg_base + (0xAEC) + ((pin >> 5) << 2)) = (1 << (pin & 0x1f)));
 }
-__STATIC_INLINE void bflb_gpio_reset_fast(struct bflb_device_s *dev, uint8_t pin)
+__STATIC_FORCEINLINE void bflb_gpio_reset_fast(struct bflb_device_s *dev, uint8_t pin)
 {
     (*(volatile uint32_t *)(uintptr_t)(dev->reg_base + (0xAF4) + ((pin >> 5) << 2)) = (1 << (pin & 0x1f)));
 }
-__STATIC_INLINE uint32_t bflb_gpio_read_fast(struct bflb_device_s *dev, uint8_t pin)
+__STATIC_FORCEINLINE uint32_t bflb_gpio_read_fast(struct bflb_device_s *dev, uint8_t pin)
 {
     return ((*(volatile uint32_t *)(uintptr_t)(dev->reg_base + (0x8C4) + (pin << 2))) & (1 << 28U));
 }
 
 
-__STATIC_INLINE void bflb_gpio_set_fast1( uint8_t pin)
+__STATIC_FORCEINLINE void bflb_gpio_set_fast1( uint8_t pin)
 {
-    __asm volatile("nop");
+   // __asm volatile("nop");
     (*(volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAEC) + ((pin >> 5) << 2)) = (1 << (pin & 0x1f)));
 }
-__STATIC_INLINE void bflb_gpio_reset_fast1( uint8_t pin)
+__STATIC_FORCEINLINE void bflb_gpio_reset_fast1( uint8_t pin)
 {
-     __asm volatile("nop");
+   //  __asm volatile("nop");
     (*(volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((pin >> 5) << 2)) = (1 << (pin & 0x1f)));
 }
-__STATIC_INLINE uint32_t bflb_gpio_read_fast1(uint8_t pin)
+__STATIC_FORCEINLINE void bflb_gpio_reset_set_fast1( uint8_t pin,uint8_t bool1)
+{
+   //  __asm volatile("nop");
+    (*(volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4)- bool1*((0xAF4-0xAEC)) + ((pin >> 5) << 2)) = (1 << (pin & 0x1f)));
+}
+__STATIC_FORCEINLINE uint32_t bflb_gpio_read_fast1(uint8_t pin)
 {
     return ((*(volatile uint32_t *)(uintptr_t)((0x20000000) + (0x8C4) + (pin << 2))) & (1 << 28U));
 }
 
-__STATIC_INLINE void PORT_JTAG_SETUP(void)
+__STATIC_FORCEINLINE void PORT_JTAG_SETUP(void)
 {
     bflb_gpio_init(g_gpio, PIN_SWCLK_TCK, GPIO_OUTPUT | GPIO_FLOAT | GPIO_SMT_EN | GPIO_DRV_0);
     bflb_gpio_init(g_gpio, PIN_SWDIO_TMS, GPIO_OUTPUT | GPIO_FLOAT | GPIO_SMT_EN | GPIO_DRV_0);
@@ -405,7 +410,7 @@ Configures the DAP Hardware I/O pins for Serial Wire Debug (SWD) mode:
  - SWCLK, SWDIO, nRESET to output mode and set to default high level.
  - TDI, nTRST to HighZ mode (pins are unused in SWD mode).
 */
-__STATIC_INLINE void PORT_SWD_SETUP(void)
+__STATIC_FORCEINLINE void PORT_SWD_SETUP(void)
 {
     g_gpio = bflb_device_get_by_name("gpio");
     g_gpio_swclk_set_fast = (volatile uint32_t *)(uintptr_t)(g_gpio->reg_base + (0xAEC) + ((PIN_SWCLK_TCK >> 5) << 2));
@@ -429,7 +434,7 @@ __STATIC_INLINE void PORT_SWD_SETUP(void)
 Disables the DAP Hardware I/O pins which configures:
  - TCK/SWCLK, TMS/SWDIO, TDI, TDO, nTRST, nRESET to High-Z mode.
 */
-__STATIC_INLINE void PORT_OFF(void)
+__STATIC_FORCEINLINE void PORT_OFF(void)
 {
     bflb_gpio_deinit(g_gpio, PIN_SWCLK_TCK);
     bflb_gpio_deinit(g_gpio, PIN_SWDIO_TMS);
@@ -520,16 +525,18 @@ __STATIC_FORCEINLINE uint32_t PIN_SWDIO_IN(void)
 */
 __STATIC_FORCEINLINE void PIN_SWDIO_OUT(uint32_t bit)
 {
-    if (bit & 0x01) {
-        // g_gpio_swdio_set_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAEC) + ((PIN_SWDIO_TMS >> 5) << 2));
-        // *g_gpio_swdio_set_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
-        bflb_gpio_set_fast1(PIN_SWDIO_TMS);
-    } else {
-        bflb_gpio_reset_fast1(PIN_SWDIO_TMS);
 
-        // g_gpio_swdio_reset_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((PIN_SWDIO_TMS >> 5) << 2));
-        // *g_gpio_swdio_reset_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
-    }
+    bflb_gpio_reset_set_fast1(PIN_SWDIO_TMS, (bit & 0x01));
+    // if (bit & 0x01) {
+    //     // g_gpio_swdio_set_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAEC) + ((PIN_SWDIO_TMS >> 5) << 2));
+    //     // *g_gpio_swdio_set_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
+    //     bflb_gpio_set_fast1(PIN_SWDIO_TMS);
+    // } else {
+    //     bflb_gpio_reset_fast1(PIN_SWDIO_TMS);
+
+    //     // g_gpio_swdio_reset_fast = (volatile uint32_t *)(uintptr_t)((0x20000000) + (0xAF4) + ((PIN_SWDIO_TMS >> 5) << 2));
+    //     // *g_gpio_swdio_reset_fast = (1 << (PIN_SWDIO_TMS & 0x1f));
+    // }
 }
 
 /** SWDIO I/O pin: Switch to Output mode (used in SWD mode only).
@@ -556,7 +563,7 @@ __STATIC_FORCEINLINE void PIN_SWDIO_OUT_ENABLE(void)
     //           = 0x40400000 | 0x40 | 0x2 | 0 | 0xB00 | 0x40000000
     //           = 0x40400B42
     
-    static const uint32_t swdio_output_cfg = 0x40400B42;
+    //static const uint32_t swdio_output_cfg = 0x40400B42;
     
     // 特殊寄存器处理（编译时优化）
     #if (PIN_SWDIO_TMS == 16)
@@ -566,7 +573,7 @@ __STATIC_FORCEINLINE void PIN_SWDIO_OUT_ENABLE(void)
     #endif
     
     // 直接写入预计算的配置值
-    *(volatile uint32_t *)(uintptr_t)((0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2)) = swdio_output_cfg;
+    *(volatile uint32_t *)(uintptr_t)((0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2)) = 0x40400B42;
 }
 
 /** SWDIO I/O pin: Switch to Input mode (used in SWD mode only).
@@ -575,13 +582,14 @@ called prior \ref PIN_SWDIO_IN function calls.
 */
 __STATIC_FORCEINLINE void PIN_SWDIO_OUT_DISABLE(void)
 {
-    bflb_gpio_set_fast(g_gpio, PIN_SWDIO_TMS);
+    //bflb_gpio_set_fast(g_gpio, PIN_SWDIO_TMS);
+    bflb_gpio_set_fast1(PIN_SWDIO_TMS);
 
     // 预计算的配置值，避免运行时计算
     // cfgset = (1 << 5) | (0 << 9) = 0x20
     // function = 11, drive = 0
     // cfg = (1<<22) | (1<<0) | (0<<2) | (11<<8) | (1<<30) = 0x40400B01
-    static const uint32_t swdio_input_cfg = 0x40400B01;
+    //static const uint32_t swdio_input_cfg = 0x40400B01;
 
 // 特殊寄存器处理（如果需要）
 #if (PIN_SWDIO_TMS == 16)
@@ -591,8 +599,8 @@ __STATIC_FORCEINLINE void PIN_SWDIO_OUT_DISABLE(void)
     *(volatile uint32_t *)(0x2000f038) &= ~(1 << 21);
 #endif
     // 直接写入预计算的配置值
-    uint32_t cfg_address = (0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2);
-    *(volatile uint32_t *)(uintptr_t)cfg_address = swdio_input_cfg;
+    // uint32_t cfg_address = ((0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2));
+    *(volatile uint32_t *)(uintptr_t)((0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2)) = 0x40400B01;
 
     // bflb_gpio_deinit(g_gpio, PIN_SWDIO_TMS);
 }
@@ -688,7 +696,7 @@ It is recommended to provide the following LEDs for status indication:
            - 1: Connect LED ON: debugger is connected to CMSIS-DAP Debug Unit.
            - 0: Connect LED OFF: debugger is not connected to CMSIS-DAP Debug Unit.
 */
-__STATIC_INLINE void LED_CONNECTED_OUT(uint32_t bit)
+__STATIC_FORCEINLINE void LED_CONNECTED_OUT(uint32_t bit)
 {
 }
 
@@ -697,7 +705,7 @@ __STATIC_INLINE void LED_CONNECTED_OUT(uint32_t bit)
            - 1: Target Running LED ON: program execution in target started.
            - 0: Target Running LED OFF: program execution in target stopped.
 */
-__STATIC_INLINE void LED_RUNNING_OUT(uint32_t bit)
+__STATIC_FORCEINLINE void LED_RUNNING_OUT(uint32_t bit)
 {
 }
 
@@ -718,7 +726,7 @@ default, the DWT timer is used.  The frequency of this timer is configured with 
 /** Get timestamp of Test Domain Timer.
 \return Current timestamp value.
 */
-__STATIC_INLINE uint32_t TIMESTAMP_GET(void)
+__STATIC_FORCEINLINE uint32_t TIMESTAMP_GET(void)
 {
     return bflb_mtimer_get_time_us();
 }
@@ -742,7 +750,7 @@ Status LEDs. In detail the operation of Hardware I/O and LED pins are enabled an
  - for nTRST, nRESET a weak pull-up (if available) is enabled.
  - LED output pins are enabled and LEDs are turned off.
 */
-__STATIC_INLINE void DAP_SETUP(void)
+__STATIC_FORCEINLINE void DAP_SETUP(void)
 {
     g_gpio = bflb_device_get_by_name("gpio");
     g_gpio_swclk_set_fast = (volatile uint32_t *)(uintptr_t)(g_gpio->reg_base + (0xAEC) + ((PIN_SWCLK_TCK >> 5) << 2));
@@ -763,7 +771,7 @@ when a device needs a time-critical unlock sequence that enables the debug port.
 \return 0 = no device specific reset sequence is implemented.\n
         1 = a device specific reset sequence is implemented.
 */
-__STATIC_INLINE uint8_t RESET_TARGET(void)
+__STATIC_FORCEINLINE uint8_t RESET_TARGET(void)
 {
     return (0U); // change to '1' when a device reset sequence is implemented
 }

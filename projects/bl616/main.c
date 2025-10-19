@@ -2,7 +2,7 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2024-03-30 11:14:00
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-19 01:56:00
+ * @LastEditTime: 2025-10-20 00:22:36
  * @FilePath: \CherryDAP\projects\bl616\main.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -45,7 +45,7 @@
 
 #define WIFI_STACK_SIZE   (1536)
 #define TASK_PRIORITY_FW  (16)
-#define TASK_PRIORITY_DAP (0)
+#define TASK_PRIORITY_DAP (31)
 
 /****************************************************************************
  * Private Types
@@ -87,14 +87,35 @@ extern void shell_init_with_task(struct bflb_device_s *shell);
 
 //     return 0;
 // }
-
+#include "SEGGER_RTTView.h"
+static int period = TASK_PRIORITY_DAP;
 void dap_main(void *param)
 {
     chry_dap_init(0, 0x20072000);
-    while (1) {
+
+    //RTTView_init(0x24000000, 0x8000);
+     while (1) {
+        extern int flag_dap_download;
+        // if(flag_dap_download >100000 && period!=31){
+        //     period=31;
+        //     vTaskPrioritySet(dap_fw_task, period);
+
+        //     //printf("dap download mode\r\n");
+        // }
+        // if(period!=TASK_PRIORITY_DAP && flag_dap_download<=100000) {
+        //     period=TASK_PRIORITY_DAP;
+        //     vTaskPrioritySet(dap_fw_task, period);
+
+        //     //printf("dap handle %d\r\n",flag_dap_download);
+        // }
         chry_dap_handle();
         chry_dap_usb2uart_handle();
-        vTaskDelay(1);
+        if (flag_dap_download==0)
+        {
+            vTaskDelay(1);
+        }
+        
+         
     }
 }
 

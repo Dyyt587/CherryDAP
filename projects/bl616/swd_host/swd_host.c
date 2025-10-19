@@ -847,7 +847,7 @@ uint8_t swd_init_debug(void)
             //do an abort on stale target, then reset the device
             swd_write_dp(DP_ABORT, DAPABORT);
             swd_set_target_reset(1);
-            clock_cpu_delay_ms(2);
+            bflb_mtimer_delay_ms(2);
             swd_set_target_reset(0);
             do_abort = 0;
         }
@@ -936,9 +936,9 @@ uint8_t swd_set_target_state_hw(target_state_t state)
 
         case RESET_RUN:
             swd_set_target_reset(1);
-            clock_cpu_delay_ms(2);
+            bflb_mtimer_delay_ms(2);
             swd_set_target_reset(0);
-            clock_cpu_delay_ms(2);
+            bflb_mtimer_delay_ms(2);
             swd_off();
             break;
 
@@ -950,7 +950,7 @@ uint8_t swd_set_target_state_hw(target_state_t state)
             if (reset_connect == CONNECT_UNDER_RESET) {
                 // Assert reset
                 swd_set_target_reset(1);
-                clock_cpu_delay_ms(2);
+                bflb_mtimer_delay_ms(2);
             }
 
             // Enable debug
@@ -960,9 +960,9 @@ uint8_t swd_set_target_state_hw(target_state_t state)
                     return 0;
                 // Target is in invalid state?
                 swd_set_target_reset(1);
-                clock_cpu_delay_ms(2);
+                bflb_mtimer_delay_ms(2);
                 swd_set_target_reset(0);
-                clock_cpu_delay_ms(2);
+                bflb_mtimer_delay_ms(2);
                 
             }
 
@@ -974,12 +974,12 @@ uint8_t swd_set_target_state_hw(target_state_t state)
             if (reset_connect == CONNECT_NORMAL) {
                 // Assert reset
                 swd_set_target_reset(1);
-                clock_cpu_delay_ms(2);
+                bflb_mtimer_delay_ms(2);
             }
 
             // Deassert reset
             swd_set_target_reset(0);
-            clock_cpu_delay_ms(2);
+            bflb_mtimer_delay_ms(2);
            
             do {
                 if (!swd_read_word(DBG_HCSR, &val)) {
@@ -1079,9 +1079,9 @@ uint8_t swd_set_target_state_sw(target_state_t state)
 
         case RESET_RUN:
             swd_set_target_reset(1);
-            clock_cpu_delay_ms(2);
+            bflb_mtimer_delay_ms(2);
             swd_set_target_reset(0);
-            clock_cpu_delay_ms(2);
+            bflb_mtimer_delay_ms(2);
 
             if (!swd_init_debug()) {
                 return 0;
@@ -1130,9 +1130,9 @@ uint8_t swd_set_target_state_sw(target_state_t state)
                 }
                 // Target is in invalid state?
                 swd_set_target_reset(1);
-                clock_cpu_delay_ms(2);
+                bflb_mtimer_delay_ms(2);
                 swd_set_target_reset(0);
-                clock_cpu_delay_ms(2);
+                bflb_mtimer_delay_ms(2);
             }
 
             // Wait until core is halted
@@ -1156,7 +1156,7 @@ uint8_t swd_set_target_state_sw(target_state_t state)
                 return 0;
             }
 
-            clock_cpu_delay_ms(10);
+            bflb_mtimer_delay_ms(10);
 
             do {
                 if (!swd_read_word(DBG_HCSR, &val)) {

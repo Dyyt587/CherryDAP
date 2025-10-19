@@ -577,9 +577,29 @@ void chry_dap_init(uint8_t busid, uint32_t reg_base)
 void chry_dap_handle(void)
 {
     uint32_t n;
+    extern int flag_dap_download;
+    flag_dap_download--;
+    if(flag_dap_download <0){
+        flag_dap_download =0;
+    }
 
+    if(flag_dap_download >200000){
+        flag_dap_download =200000;
+    }else{
+
+    }
+    static int cnt=0;
+    if(cnt++%1000==0){
+        if(flag_dap_download >100000){
+            //printf("dap download mode\r\n");
+        }else{
+            //printf("dap handle %d\r\n",flag_dap_download);
+        }
+    }
     // Process pending requests
     while (USB_RequestCountI != USB_RequestCountO) {
+           // printf("dap: %d\r\n", USB_RequestCountI - USB_RequestCountO);
+
         // Handle Queue Commands
         n = USB_RequestIndexO;
         while (USB_Request[n][0] == ID_DAP_QueueCommands) {

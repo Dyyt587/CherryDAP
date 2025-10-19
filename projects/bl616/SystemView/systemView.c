@@ -371,7 +371,7 @@ int SYSVIEW_REC_GetOutgoing(void)
 //     // s_tGetByte.pTarget = &s_tByteQueue;
 //     // s_tGetByte.fnGetByte = receive_usb_get_byte;
 //     // init_fsm(check_string, &s_fsmCheckStr, args("SystemView.stop()", &s_tGetByte));
-//     clock_cpu_delay_ms(10);
+//     delay(10);
 //     for (uint32_t rtt_addr = wAddr; rtt_addr < wAddr + wSize; rtt_addr += 4) {
 //         if (swd_read_memory(rtt_addr, buffer, 16)) {
 //             //for(uint8_t i = 0 ;i < 16;i++){

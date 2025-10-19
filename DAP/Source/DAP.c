@@ -1630,7 +1630,7 @@ __WEAK uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *respon
   return ((1U << 16) | 1U);
 }
 
-
+int flag_dap_download = 0;
 // Process DAP command request and prepare response
 //   request:  pointer to request data
 //   response: pointer to response data
@@ -1644,7 +1644,10 @@ uint32_t DAP_ProcessCommand(const uint8_t *request, uint8_t *response) {
   }
 
   *response++ = *request;
-
+  if(*(request)==ID_DAP_Transfer || *(request)==ID_DAP_TransferBlock) {
+    flag_dap_download+=500;
+  }
+  //printf("DAP cmd: 0x%02X\r\n", *(request));
   switch (*request++) {
     case ID_DAP_Info:
       num = DAP_Info(*request, response+1);
