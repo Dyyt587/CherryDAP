@@ -678,7 +678,7 @@ static uint32_t DAP_TransferConfigure(const uint8_t *request, uint8_t *response)
 //   return:   number of bytes in response (lower 16 bits)
 //             number of bytes in request (upper 16 bits)
 #if (DAP_SWD != 0)
-static uint32_t DAP_SWD_Transfer(const uint8_t *request, uint8_t *response) {
+static inline uint32_t DAP_SWD_Transfer(const uint8_t *request, uint8_t *response) {
   const
   uint8_t  *request_head;
   uint32_t  request_count;
@@ -947,7 +947,7 @@ end:
 //   return:   number of bytes in response (lower 16 bits)
 //             number of bytes in request (upper 16 bits)
 #if (DAP_JTAG != 0)
-static uint32_t DAP_JTAG_Transfer(const uint8_t *request, uint8_t *response) {
+static inline uint32_t DAP_JTAG_Transfer(const uint8_t *request, uint8_t *response) {
   const
   uint8_t  *request_head;
   uint32_t  request_count;

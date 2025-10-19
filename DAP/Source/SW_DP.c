@@ -134,7 +134,7 @@ void SWD_Sequence (uint32_t info, const uint8_t *swdo, uint8_t *swdi) {
 //   data:    DATA[31:0]
 //   return:  ACK[2:0]
 #define SWD_TransferFunction(speed)     /**/                                    \
-static uint8_t SWD_Transfer##speed (uint32_t request, uint32_t *data) {         \
+static inline uint8_t SWD_Transfer##speed (uint32_t request, uint32_t *data) {         \
   uint32_t ack;                                                                 \
   uint32_t bit;                                                                 \
   uint32_t val;                                                                 \
@@ -274,12 +274,14 @@ SWD_TransferFunction(Slow)
 //   request: A[3:2] RnW APnDP
 //   data:    DATA[31:0]
 //   return:  ACK[2:0]
-uint8_t  SWD_Transfer(uint32_t request, uint32_t *data) {
-  if (DAP_Data.fast_clock) {
-    return SWD_TransferFast(request, data);
-  } else {
-    return SWD_TransferSlow(request, data);
-  }
+uint8_t  inline SWD_Transfer(uint32_t request, uint32_t *data) {
+  return SWD_TransferFast(request, data);
+
+  // if (DAP_Data.fast_clock) {
+  //   return SWD_TransferFast(request, data);
+  // } else {
+  //   return SWD_TransferSlow(request, data);
+  // }
 }
 
 
