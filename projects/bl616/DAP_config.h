@@ -604,6 +604,30 @@ __STATIC_FORCEINLINE void PIN_SWDIO_OUT_DISABLE(void)
 
     // bflb_gpio_deinit(g_gpio, PIN_SWDIO_TMS);
 }
+__STATIC_FORCEINLINE void PIN_SWDIO_OUT_DISABLE_NOSET(void)
+{
+    //bflb_gpio_set_fast(g_gpio, PIN_SWDIO_TMS);
+    // bflb_gpio_set_fast1(PIN_SWDIO_TMS);
+
+    // 预计算的配置值，避免运行时计算
+    // cfgset = (1 << 5) | (0 << 9) = 0x20
+    // function = 11, drive = 0
+    // cfg = (1<<22) | (1<<0) | (0<<2) | (11<<8) | (1<<30) = 0x40400B01
+    //static const uint32_t swdio_input_cfg = 0x40400B01;
+
+// 特殊寄存器处理（如果需要）
+#if (PIN_SWDIO_TMS == 16)
+    *(volatile uint32_t *)(0x2000f038) &= ~(1 << 20);
+#endif
+#if (PIN_SWDIO_TMS == 17)
+    *(volatile uint32_t *)(0x2000f038) &= ~(1 << 21);
+#endif
+    // 直接写入预计算的配置值
+    // uint32_t cfg_address = ((0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2));
+    *(volatile uint32_t *)(uintptr_t)((0x20000000) + 0x8C4 + (PIN_SWDIO_TMS << 2)) = 0x40400B01;
+
+    // bflb_gpio_deinit(g_gpio, PIN_SWDIO_TMS);
+}
 
 // TDI Pin I/O ---------------------------------------------
 

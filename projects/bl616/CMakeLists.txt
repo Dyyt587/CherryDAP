@@ -7,6 +7,7 @@ find_package(bouffalo_sdk REQUIRED HINTS $ENV{BL_SDK_BASE})
 # User
 sdk_add_compile_definitions(-DCONFIG_CLI_CMD_ENABLE)
 #sdk_add_compile_definitions(-DBL616_DHCP_DEBUG)
+# sdk_add_compile_options(-O3)
 
 if(CONFIG_WIFI_GATEWAY)
 sdk_add_compile_definitions(-DFHOST_BUFFER_COPY=1)

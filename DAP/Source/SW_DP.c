@@ -162,7 +162,7 @@ static inline uint8_t SWD_Transfer##speed (uint32_t request, uint32_t *data) {  
   SW_WRITE_BIT(1U);                     /* Park Bit */                          \
                                                                                 \
   /* Turnaround */                                                              \
-  PIN_SWDIO_OUT_DISABLE();                                                      \
+  PIN_SWDIO_OUT_DISABLE_NOSET();                                                      \
   for (n = DAP_Data.swd_conf.turnaround; n; n--) {                              \
     SW_CLOCK_CYCLE();                                                           \
   }                                                                             \

@@ -78,6 +78,7 @@ void read_rtt_and_send_usb(void)
                         }
                         len += second_part_len;
                     }
+
                     // emit(rtt_sig, &tRTTMsgObj,
                     //     args(
                     //         rtt_buffer,
@@ -175,6 +176,51 @@ uint32_t write_rtt_and_receive_usb(uint8_t inputChar)
 // {
 //     return peek_queue(&s_tByteQueue, pchByte, hwLength);
 // }
+#include "shell.h"
+int cmd_rttview_start(int argc, char **argv)
+{
+    if (argc > 4) {
+        tfp_printf("Usage: rttview_start <addr> <size> <channel>\r\n");
+        printf("Usage: rttview_start <addr> <size> <channel>\r\n");
+        return -1;
+    }
+    if (argc == 1) {
+        RTT_wAddr = 0x24000000;
+        RTT_wSize = 0x1000;
+        RTT_wChannel = 0;
+        tfp_printf("Addr = 0x%x, Size = %d, Channel = %d\r\n", RTT_wAddr, RTT_wSize, RTT_wChannel);
+        printf("Addr = 0x%x, Size = %d, Channel = %d\r\n", RTT_wAddr, RTT_wSize, RTT_wChannel);
+        RTTView_init(RTT_wAddr, RTT_wSize);
+        //return 0;
+    } else {
+        RTT_wAddr = (uint32_t)strtoul(argv[1], NULL, 0x24000000);
+        RTT_wSize = (uint32_t)strtoul(argv[2], NULL, 0x10000);
+        RTT_wChannel = (uint32_t)strtoul(argv[3], NULL, 0);
+        tfp_printf("Addr = 0x%x, Size = %d, Channel = %d\r\n", RTT_wAddr, RTT_wSize, RTT_wChannel);
+        printf("Addr = 0x%x, Size = %d, Channel = %d\r\n", RTT_wAddr, RTT_wSize, RTT_wChannel);
+        RTTView_init(RTT_wAddr, RTT_wSize);
+    }
+
+    if (segger_rtt_addr != 0) {
+        swd_read_memory(segger_rtt_addr, (uint8_t *)&_SEGGER_RTT, sizeof(_SEGGER_RTT));
+        printf("Find %s addr 0x%x\r\n", _SEGGER_RTT.acID, segger_rtt_addr);
+        tfp_printf("Find %s addr 0x%x\r\n", _SEGGER_RTT.acID, segger_rtt_addr);
+        for (uint8_t i = 0; i < _SEGGER_RTT.MaxNumUpBuffers; i++) {
+            printf("UpBuffer Channel %d Size: %d Mode: %d\r\n", i, _SEGGER_RTT.aUp[i].SizeOfBuffer, _SEGGER_RTT.aUp[i].Flags);
+            tfp_printf("UpBuffer Channel %d Size: %d Mode: %d\r\n", i, _SEGGER_RTT.aUp[i].SizeOfBuffer, _SEGGER_RTT.aUp[i].Flags);
+        }
+        for (uint8_t i = 0; i < _SEGGER_RTT.MaxNumDownBuffers; i++) {
+            printf("DownBuffer Channel %d Size: %d Mode: %d\r\n", i, _SEGGER_RTT.aDown[i].SizeOfBuffer, _SEGGER_RTT.aDown[i].Flags);
+            tfp_printf("DownBuffer Channel %d Size: %d Mode: %d\r\n", i, _SEGGER_RTT.aDown[i].SizeOfBuffer, _SEGGER_RTT.aDown[i].Flags);
+        }
+    } else {
+        tfp_printf("No find _SEGGER_RTT addr\r\n");
+        printf("No find _SEGGER_RTT addr\r\n");
+    }
+
+    return 0;
+}
+SHELL_CMD_EXPORT_ALIAS(cmd_rttview_start, rttview_start, rttview start.);
 
 void RTTView_init(uint32_t wAddr, uint32_t wSize)
 {
@@ -191,13 +237,14 @@ void RTTView_init(uint32_t wAddr, uint32_t wSize)
     // init_fsm(check_string, &s_fsmCheckStr, args("RTTView.stop()", &s_tGetByte));
     // clock_cpu_delay_ms(10);
     for (uint32_t rtt_addr = wAddr; rtt_addr < wAddr + wSize; rtt_addr += 4) {
+        printf("scan addr: 0x%x\r\n", rtt_addr);
         if (swd_read_memory(rtt_addr, buffer, 16)) {
-            for(uint8_t i = 0 ;i < 16;i++){
-               tfp_printf("%02x ",buffer[i]);
-               printf("%02x ",buffer[i]);
-            }
-            tfp_printf("\r\n");
-            printf("\r\n");
+            // for(uint8_t i = 0 ;i < 16;i++){
+            //    tfp_printf("%02x ",buffer[i]);
+            //    printf("%02x ",buffer[i]);
+            // }
+            // tfp_printf("\r\n");
+            // printf("\r\n");
             if (memcmp(buffer, RTT_SIGNATURE, 10) == 0) {
                 segger_rtt_addr = rtt_addr; // 找到了 RTT 控制块
                 tfp_printf("find _SEGGER_RTT addr 0x%x\r\n", segger_rtt_addr);

@@ -616,17 +616,19 @@ void chry_dap_handle(void)
             }
         }
 
-        extern int tcp_sock;
-        if(tcp_sock >=0){
-            //LOG_I("send data to tcp\r\n");
-            int ret = write(tcp_sock, USB_Request[USB_RequestIndexO], USB_ReqSize[USB_RequestIndexO]);
-        }else{
-            //LOG_I("no tcp socket find\r\n");
-        }
+
 
         // Execute DAP Command (process request and prepare response)
         USB_RespSize[USB_ResponseIndexI] =
             (uint16_t)DAP_ExecuteCommand(USB_Request[USB_RequestIndexO], USB_Response[USB_ResponseIndexI]);
+
+        // extern int tcp_sock;
+        // if(tcp_sock >=0){
+        //     //LOG_I("send data to tcp\r\n");
+        //     int ret = write(tcp_sock, USB_Request[USB_RequestIndexO], USB_ReqSize[USB_RequestIndexO]);
+        // }else{
+        //     //LOG_I("no tcp socket find\r\n");
+        // }
 
         // Update Request Index and Count
         USB_RequestIndexO++;
@@ -634,6 +636,8 @@ void chry_dap_handle(void)
             USB_RequestIndexO = 0U;
         }
         USB_RequestCountO++;
+
+
 
         if (USB_RequestIdle) {
             if ((uint16_t)(USB_RequestCountI - USB_RequestCountO) != DAP_PACKET_COUNT) {

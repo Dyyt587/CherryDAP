@@ -2,7 +2,7 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2024-03-30 11:14:00
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-20 00:22:36
+ * @LastEditTime: 2025-10-20 02:05:19
  * @FilePath: \CherryDAP\projects\bl616\main.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -45,7 +45,7 @@
 
 #define WIFI_STACK_SIZE   (1536)
 #define TASK_PRIORITY_FW  (16)
-#define TASK_PRIORITY_DAP (31)
+#define TASK_PRIORITY_DAP (0)
 
 /****************************************************************************
  * Private Types
