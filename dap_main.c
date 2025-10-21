@@ -44,7 +44,7 @@
 
 #define WEBUSB_INTF_NUM (3 + CONFIG_CHERRYDAP_USE_CUSTOM_HID + CONFIG_CHERRYDAP_USE_MSC)
 
-#define WEBUSB_URL_STRINGS                                 \
+#define WEBUSB_URL_STRINGS \
     'c', 'h', 'e', 'r', 'r', 'y', 'd', 'a', 'p', '.', 'c', 'h', 'e', 'r', 'r', 'y', '-', 'e', 'm', 'b', 'e', 'd', 'd', 'e', 'd', '.', 'o', 'r', 'g',
 
 __ALIGN_BEGIN const uint8_t USBD_WinUSBDescriptorSetDescriptor[] = {
@@ -140,7 +140,7 @@ __ALIGN_BEGIN const uint8_t USBD_BinaryObjectStoreDescriptor[] = {
 #endif
 };
 
-#define URL_DESCRIPTOR_LENGTH    (3 + 29)
+#define URL_DESCRIPTOR_LENGTH (3 + 29)
 
 const uint8_t USBD_WebUSBURLDescriptor[URL_DESCRIPTOR_LENGTH] = {
     URL_DESCRIPTOR_LENGTH,
@@ -197,6 +197,8 @@ static const uint8_t config_descriptor[] = {
     /* Endpoint IN 1 */
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_IN_EP, USB_ENDPOINT_TYPE_BULK, DAP_PACKET_SIZE, 0x00),
     CDC_ACM_DESCRIPTOR_INIT(0x01, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, DAP_PACKET_SIZE, 0x00),
+// CDC_ACM_DESCRIPTOR_INIT(0x02, CDC_INT_EP, CDC_OUT_EP1, CDC_IN_EP1, DAP_PACKET_SIZE, 0x00),
+
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
     HID_DESC(),
 #endif
@@ -206,6 +208,8 @@ static const uint8_t config_descriptor[] = {
 #if USBD_WEBUSB_ENABLE
     USB_INTERFACE_DESCRIPTOR_INIT(WEBUSB_INTF_NUM, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00),
 #endif
+    //CDC_ACM_DESCRIPTOR_INIT(0x04, CDC_INT_EP1, CDC_OUT_EP1, CDC_IN_EP1, DAP_PACKET_SIZE, 0x00),
+
 };
 
 static const uint8_t other_speed_config_descriptor[] = {
@@ -217,6 +221,7 @@ static const uint8_t other_speed_config_descriptor[] = {
     /* Endpoint IN 1 */
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_IN_EP, USB_ENDPOINT_TYPE_BULK, DAP_PACKET_SIZE, 0x00),
     CDC_ACM_DESCRIPTOR_INIT(0x01, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, DAP_PACKET_SIZE, 0x00),
+//    CDC_ACM_DESCRIPTOR_INIT(0x02, CDC_INT_EP, CDC_OUT_EP1, CDC_IN_EP1, DAP_PACKET_SIZE, 0x00),
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
     HID_DESC(),
 #endif
@@ -226,40 +231,42 @@ static const uint8_t other_speed_config_descriptor[] = {
 #if USBD_WEBUSB_ENABLE
     USB_INTERFACE_DESCRIPTOR_INIT(WEBUSB_INTF_NUM, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00),
 #endif
+    //CDC_ACM_DESCRIPTOR_INIT(0x04, CDC_INT_EP1, CDC_OUT_EP1, CDC_IN_EP1, DAP_PACKET_SIZE, 0x00),
+
 };
 
 /*!< custom hid report descriptor */
 const uint8_t hid_custom_report_desc[HID_CUSTOM_REPORT_DESC_SIZE] = {
-        /* USER CODE BEGIN 0 */
-        0x06, 0x00, 0xff, /* USAGE_PAGE (Vendor Defined Page 1) */
-        0x09, 0x01, /* USAGE (Vendor Usage 1) */
-        0xa1, 0x01, /* COLLECTION (Application) */
-        0x85, 0x02, /*   REPORT ID (0x02) */
-        0x09, 0x02, /*   USAGE (Vendor Usage 1) */
-        0x15, 0x00, /*   LOGICAL_MINIMUM (0) */
-        0x25, 0xff, /*LOGICAL_MAXIMUM (255) */
-        0x75, 0x08, /*   REPORT_SIZE (8) */
-        0x96, 0xff, 0x03, /*   REPORT_COUNT (1023) */
-        0x81, 0x02, /*   INPUT (Data,Var,Abs) */
-        /* <___________________________________________________> */
-        0x85, 0x01, /*   REPORT ID (0x01) */
-        0x09, 0x03, /*   USAGE (Vendor Usage 1) */
-        0x15, 0x00, /*   LOGICAL_MINIMUM (0) */
-        0x25, 0xff, /*   LOGICAL_MAXIMUM (255) */
-        0x75, 0x08, /*   REPORT_SIZE (8) */
-        0x96, 0xff, 0x03, /*   REPORT_COUNT (1023) */
-        0x91, 0x02, /*   OUTPUT (Data,Var,Abs) */
+    /* USER CODE BEGIN 0 */
+    0x06, 0x00, 0xff, /* USAGE_PAGE (Vendor Defined Page 1) */
+    0x09, 0x01,       /* USAGE (Vendor Usage 1) */
+    0xa1, 0x01,       /* COLLECTION (Application) */
+    0x85, 0x02,       /*   REPORT ID (0x02) */
+    0x09, 0x02,       /*   USAGE (Vendor Usage 1) */
+    0x15, 0x00,       /*   LOGICAL_MINIMUM (0) */
+    0x25, 0xff,       /*LOGICAL_MAXIMUM (255) */
+    0x75, 0x08,       /*   REPORT_SIZE (8) */
+    0x96, 0xff, 0x03, /*   REPORT_COUNT (1023) */
+    0x81, 0x02,       /*   INPUT (Data,Var,Abs) */
+    /* <___________________________________________________> */
+    0x85, 0x01,       /*   REPORT ID (0x01) */
+    0x09, 0x03,       /*   USAGE (Vendor Usage 1) */
+    0x15, 0x00,       /*   LOGICAL_MINIMUM (0) */
+    0x25, 0xff,       /*   LOGICAL_MAXIMUM (255) */
+    0x75, 0x08,       /*   REPORT_SIZE (8) */
+    0x96, 0xff, 0x03, /*   REPORT_COUNT (1023) */
+    0x91, 0x02,       /*   OUTPUT (Data,Var,Abs) */
 
-        /* <___________________________________________________> */
-        0x85, 0x03, /*   REPORT ID (0x03) */
-        0x09, 0x04, /*   USAGE (Vendor Usage 1) */
-        0x15, 0x00, /*   LOGICAL_MINIMUM (0) */
-        0x25, 0xff, /*   LOGICAL_MAXIMUM (255) */
-        0x75, 0x08, /*   REPORT_SIZE (8) */
-        0x96, 0xff, 0x03, /*   REPORT_COUNT (1023) */
-        0xb1, 0x02, /*   FEATURE (Data,Var,Abs) */
-        /* USER CODE END 0 */
-        0xC0 /*     END_COLLECTION	             */
+    /* <___________________________________________________> */
+    0x85, 0x03,       /*   REPORT ID (0x03) */
+    0x09, 0x04,       /*   USAGE (Vendor Usage 1) */
+    0x15, 0x00,       /*   LOGICAL_MINIMUM (0) */
+    0x25, 0xff,       /*   LOGICAL_MAXIMUM (255) */
+    0x75, 0x08,       /*   REPORT_SIZE (8) */
+    0x96, 0xff, 0x03, /*   REPORT_COUNT (1023) */
+    0xb1, 0x02,       /*   FEATURE (Data,Var,Abs) */
+    /* USER CODE END 0 */
+    0xC0 /*     END_COLLECTION	             */
 };
 
 char serial_number_dynamic[36] = "00000000000000000123456789ABCDEF"; // Dynamic serial number
@@ -269,6 +276,7 @@ char *string_descriptors[] = {
     "CherryUSB",                        /* Manufacturer */
     "CherryUSB CMSIS-DAP",              /* Product */
     "00000000000000000123456789ABCDEF", /* Serial Number */
+    "zz",                               /* Serial Number */
 };
 
 static const uint8_t device_quality_descriptor[] = {
@@ -327,7 +335,7 @@ static volatile uint8_t USB_ResponseIdle = 1;    // Response Idle  Flag
 
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t USB_Request[DAP_PACKET_COUNT][DAP_PACKET_SIZE];  // Request  Buffer
 static USB_NOCACHE_RAM_SECTION USB_MEM_ALIGNX uint8_t USB_Response[DAP_PACKET_COUNT][DAP_PACKET_SIZE]; // Response Buffer
-static uint16_t USB_ReqSize[DAP_PACKET_COUNT];                                                        // Request Size
+static uint16_t USB_ReqSize[DAP_PACKET_COUNT];                                                         // Request Size
 static uint16_t USB_RespSize[DAP_PACKET_COUNT];                                                        // Response Size
 
 volatile struct cdc_line_coding g_cdc_lincoding;
@@ -423,18 +431,14 @@ void dap_in_callback(uint8_t busid, uint8_t ep, uint32_t nbytes)
         USB_ResponseIdle = 1U;
     }
 }
+#include "shell.h"
 
 void usbd_cdc_acm_bulk_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
 {
     (void)busid;
-#include "shell.h"
-    extern int flag_cdc_shell;
-    if(flag_cdc_shell){
-        shell_exe_cmd(usb_tmpbuffer, nbytes);
-    }else{
-        chry_ringbuffer_write(&g_usbrx, usb_tmpbuffer, nbytes);
 
-    }
+    chry_ringbuffer_write(&g_usbrx, usb_tmpbuffer, nbytes);
+
     if (chry_ringbuffer_get_free(&g_usbrx) >= DAP_PACKET_SIZE) {
         usbd_ep_start_read(0, CDC_OUT_EP, usb_tmpbuffer, DAP_PACKET_SIZE);
     } else {
@@ -448,14 +452,23 @@ void usbd_cdc_acm_bulk_in(uint8_t busid, uint8_t ep, uint32_t nbytes)
     uint32_t size;
     uint8_t *buffer;
     extern int flag_cdc_shell;
-if(flag_cdc_shell){
-    chry_ringbuffer_linear_read_done(&g_usbshell, nbytes);
+    if (flag_cdc_shell) {
+        chry_ringbuffer_linear_read_done(&g_usbshell, nbytes);
+        if ((nbytes % DAP_PACKET_SIZE) == 0 && nbytes) {
+        /* send zlp */
+        usbd_ep_start_write(0, CDC_IN_EP, NULL, 0);
+    } else {
+        if (chry_ringbuffer_get_used(&g_usbshell)) {
+            buffer = chry_ringbuffer_linear_read_setup(&g_usbshell, &size);
+            usbd_ep_start_write(0, CDC_IN_EP, buffer, size);
+        } else {
+            usbtx_idle_flag = 1;
+        }
+    }
 
-}else{
-    chry_ringbuffer_linear_read_done(&g_uartrx, nbytes);
-
-}
-    if ((nbytes % DAP_PACKET_SIZE) == 0 && nbytes) {
+    } else {
+        chry_ringbuffer_linear_read_done(&g_uartrx, nbytes);
+        if ((nbytes % DAP_PACKET_SIZE) == 0 && nbytes) {
         /* send zlp */
         usbd_ep_start_write(0, CDC_IN_EP, NULL, 0);
     } else {
@@ -466,6 +479,8 @@ if(flag_cdc_shell){
             usbtx_idle_flag = 1;
         }
     }
+    }
+    
 }
 
 struct usbd_endpoint dap_out_ep = {
@@ -487,22 +502,33 @@ struct usbd_endpoint cdc_in_ep = {
     .ep_addr = CDC_IN_EP,
     .ep_cb = usbd_cdc_acm_bulk_in
 };
+struct usbd_endpoint cdc_out_ep1 = {
+    .ep_addr = CDC_OUT_EP1,
+    .ep_cb = usbd_cdc_acm_bulk_out
+};
+
+struct usbd_endpoint cdc_in_ep1 = {
+    .ep_addr = CDC_IN_EP1,
+    .ep_cb = usbd_cdc_acm_bulk_in
+};
 
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
 struct usbd_endpoint hid_custom_in_ep = {
-        .ep_addr = HID_IN_EP,
-        .ep_cb = usbd_hid_custom_in_callback,
+    .ep_addr = HID_IN_EP,
+    .ep_cb = usbd_hid_custom_in_callback,
 };
 
 struct usbd_endpoint hid_custom_out_ep = {
-        .ep_addr = HID_OUT_EP,
-        .ep_cb = usbd_hid_custom_out_callback,
+    .ep_addr = HID_OUT_EP,
+    .ep_cb = usbd_hid_custom_out_callback,
 };
 #endif
 
 struct usbd_interface dap_intf;
 struct usbd_interface intf1;
 struct usbd_interface intf2;
+struct usbd_interface intf3;
+struct usbd_interface intf4;
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
 struct usbd_interface hid_intf;
 #endif
@@ -560,6 +586,10 @@ void chry_dap_init(uint8_t busid, uint32_t reg_base)
     usbd_add_endpoint(0, &cdc_out_ep);
     usbd_add_endpoint(0, &cdc_in_ep);
 
+    usbd_add_interface(0, usbd_cdc_acm_init_intf(0, &intf3));
+    usbd_add_interface(0, usbd_cdc_acm_init_intf(0, &intf4));
+    usbd_add_endpoint(0, &cdc_out_ep1);
+    usbd_add_endpoint(0, &cdc_in_ep1);
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
     /*!< hid */
     usbd_add_interface(0, usbd_hid_init_intf(0, &hid_intf, hid_custom_report_desc, HID_CUSTOM_REPORT_DESC_SIZE));
@@ -574,31 +604,34 @@ void chry_dap_init(uint8_t busid, uint32_t reg_base)
     usbd_initialize(busid, reg_base, usbd_event_handler);
 }
 
+void chry_rtt_handle(void)
+{
+}
+
 void chry_dap_handle(void)
 {
     uint32_t n;
     extern int flag_dap_download;
     flag_dap_download--;
-    if(flag_dap_download <0){
-        flag_dap_download =0;
+    if (flag_dap_download < 0) {
+        flag_dap_download = 0;
     }
 
-    if(flag_dap_download >200000){
-        flag_dap_download =200000;
-    }else{
-
+    if (flag_dap_download > 200000) {
+        flag_dap_download = 200000;
+    } else {
     }
-    static int cnt=0;
-    if(cnt++%1000==0){
-        if(flag_dap_download >100000){
+    static int cnt = 0;
+    if (cnt++ % 1000 == 0) {
+        if (flag_dap_download > 100000) {
             //printf("dap download mode\r\n");
-        }else{
+        } else {
             //printf("dap handle %d\r\n",flag_dap_download);
         }
     }
     // Process pending requests
     while (USB_RequestCountI != USB_RequestCountO) {
-           // printf("dap: %d\r\n", USB_RequestCountI - USB_RequestCountO);
+        // printf("dap: %d\r\n", USB_RequestCountI - USB_RequestCountO);
 
         // Handle Queue Commands
         n = USB_RequestIndexO;
@@ -615,8 +648,6 @@ void chry_dap_handle(void)
                 // }
             }
         }
-
-
 
         // Execute DAP Command (process request and prepare response)
         USB_RespSize[USB_ResponseIndexI] =
@@ -636,8 +667,6 @@ void chry_dap_handle(void)
             USB_RequestIndexO = 0U;
         }
         USB_RequestCountO++;
-
-
 
         if (USB_RequestIdle) {
             if ((uint16_t)(USB_RequestCountI - USB_RequestCountO) != DAP_PACKET_COUNT) {
@@ -683,79 +712,85 @@ void usbd_cdc_acm_get_line_coding(uint8_t busid, uint8_t intf, struct cdc_line_c
     (void)busid;
     memcpy(line_coding, (uint8_t *)&g_cdc_lincoding, sizeof(struct cdc_line_coding));
 }
+extern int flag_cdc_shell;
 
 void chry_dap_usb2uart_handle(void)
 {
     uint32_t size;
     uint8_t *buffer;
 
-    if (config_uart) {
-        /* disable irq here */
-        config_uart = 0;
-        /* config uart here */
-        chry_dap_usb2uart_uart_config_callback((struct cdc_line_coding *)&g_cdc_lincoding);
-        usbtx_idle_flag = 1;
-        uarttx_idle_flag = 1;
-        config_uart_transfer = 1;
-        //chry_ringbuffer_reset_read(&g_uartrx);
-        /* enable irq here */
-    }
+    if (flag_cdc_shell) {
+        /* in shell mode, do not config uart */
 
-    if (config_uart_transfer == 0) {
-        return;
-    }
-
-    /* why we use chry_ringbuffer_linear_read_setup?
-     * becase we use dma and we do not want to use temp buffer to memcpy from ringbuffer
-     *
-    */
-
-    /* uartrx to usb tx */
-    if (usbtx_idle_flag) {
-        extern int flag_cdc_shell;
-        if(flag_cdc_shell){
-            if (chry_ringbuffer_get_used(&g_usbshell)) {
-            usbtx_idle_flag = 0;
-            /* start first transfer */
+        if (chry_ringbuffer_get_used(&g_usbshell)) {
             buffer = chry_ringbuffer_linear_read_setup(&g_usbshell, &size);
-
-            extern int tcp_sock;
-            if(tcp_sock >=0){
-                LOG_I("send data to tcp\r\n");
-                int ret = write(tcp_sock, buffer, size);
-            }else{
-                LOG_I("no tcp socket find\r\n");
-            }
             usbd_ep_start_write(0, CDC_IN_EP, buffer, size);
+            //chry_ringbuffer_linear_read_done(&g_usbshell, size);
         }
-         }else{
-            if (chry_ringbuffer_get_used(&g_uartrx)) {
-            usbtx_idle_flag = 0;
-            /* start first transfer */
-            buffer = chry_ringbuffer_linear_read_setup(&g_uartrx, &size);
 
-            extern int tcp_sock;
-            if(tcp_sock >=0){
-                LOG_I("send data to tcp\r\n");
-                int ret = write(tcp_sock, buffer, size);
-            }else{
-                LOG_I("no tcp socket find\r\n");
-            }
-
-            usbd_ep_start_write(0, CDC_IN_EP, buffer, size);
-        }
- 
-        }
-        
-    }
-
-    /* usbrx to uart tx */
-    if (uarttx_idle_flag) {
         if (chry_ringbuffer_get_used(&g_usbrx)) {
-            uarttx_idle_flag = 0;
-            /* start first transfer */
             buffer = chry_ringbuffer_linear_read_setup(&g_usbrx, &size);
-            chry_dap_usb2uart_uart_send_bydma(buffer, size);
+            extern int flag_rttview_start;
+            if (flag_rttview_start) {
+                for (int i = 0; i < size; i++) {
+                    write_rtt_and_receive_usb('a', (*buffer), size);
+                }
+
+            } else {
+                shell_exe_cmd(buffer, size);
+            }
+            chry_ringbuffer_linear_read_done(&g_usbrx, size);
+        }
+        extern int flag_rttview_start;
+        if (flag_rttview_start) {
+            read_rtt_and_send_usb();
+        }
+
+    } else {
+        if (config_uart) {
+            /* disable irq here */
+            config_uart = 0;
+            /* config uart here */
+            chry_dap_usb2uart_uart_config_callback((struct cdc_line_coding *)&g_cdc_lincoding);
+            usbtx_idle_flag = 1;
+            uarttx_idle_flag = 1;
+            config_uart_transfer = 1;
+            //chry_ringbuffer_reset_read(&g_uartrx);
+            /* enable irq here */
+        }
+        if (config_uart_transfer == 0) {
+            return;
+        }
+        /* why we use chry_ringbuffer_linear_read_setup?
+         * becase we use dma and we do not want to use temp buffer to memcpy from ringbuffer
+         *
+         */
+        /* uartrx to usb tx */
+        if (usbtx_idle_flag) {
+            if (chry_ringbuffer_get_used(&g_uartrx)) {
+                usbtx_idle_flag = 0;
+                /* start first transfer */
+                buffer = chry_ringbuffer_linear_read_setup(&g_uartrx, &size);
+
+                extern int tcp_sock;
+                if (tcp_sock >= 0) {
+                    LOG_I("send data to tcp\r\n");
+                    int ret = write(tcp_sock, buffer, size);
+                } else {
+                    LOG_I("no tcp socket find\r\n");
+                }
+
+                usbd_ep_start_write(0, CDC_IN_EP, buffer, size);
+            }
+        }
+        /* usbrx to uart tx */
+        if (chry_ringbuffer_get_used(&g_usbrx)) {
+            if (uarttx_idle_flag) {
+                uarttx_idle_flag = 0;
+                /* start first transfer */
+                buffer = chry_ringbuffer_linear_read_setup(&g_usbrx, &size);
+                chry_dap_usb2uart_uart_send_bydma(buffer, size);
+            }
         }
     }
 
@@ -766,6 +801,7 @@ void chry_dap_usb2uart_handle(void)
             usbd_ep_start_read(0, CDC_OUT_EP, usb_tmpbuffer, DAP_PACKET_SIZE);
         }
     }
+
     extern int tcp_sock;
     // if(tcp_sock >=0)
     // {
@@ -774,7 +810,6 @@ void chry_dap_usb2uart_handle(void)
     //         chry_ringbuffer_write(&g_usbrx, tcp_tmpbuffer, reced);
     //     }
     // }
-
 }
 
 /* implment by user */
@@ -813,19 +848,19 @@ typedef struct
 
 BLOCK_TYPE mass_block[BLOCK_COUNT];
 
-void usbd_msc_get_cap(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
+void usbd_msc_get_cap(uint8_t busid, uint8_t lun, uint32_t *block_num, uint32_t *block_size)
 {
     *block_num = 1000; //Pretend having so many buffer,not has actually.
     *block_size = BLOCK_SIZE;
 }
-int usbd_msc_sector_read(uint32_t sector, uint8_t *buffer, uint32_t length)
+int usbd_msc_sector_read(uint8_t busid, uint8_t lun, uint32_t sector, uint8_t *buffer, uint32_t length)
 {
     if (sector < 10)
         memcpy(buffer, mass_block[sector].BlockSpace, length);
     return 0;
 }
 
-int usbd_msc_sector_write(uint32_t sector, uint8_t *buffer, uint32_t length)
+int usbd_msc_sector_write(uint8_t busid, uint8_t lun, uint32_t sector, uint8_t *buffer, uint32_t length)
 {
     if (sector < 10)
         memcpy(mass_block[sector].BlockSpace, buffer, length);

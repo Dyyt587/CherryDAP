@@ -23,7 +23,14 @@
 
 #define CDC_IN_EP  0x83
 #define CDC_OUT_EP 0x04
+
 #define CDC_INT_EP 0x85
+#define CDC_INT_EP1 0x8A
+
+#define CDC_IN_EP1 0x86
+#define CDC_OUT_EP1 0x01
+
+
 
 #define MSC_IN_EP  0x86
 #define MSC_OUT_EP 0x07

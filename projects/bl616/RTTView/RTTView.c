@@ -2,7 +2,8 @@
 #include "swd_host.h"
 #include "SEGGER_RTTView.h"
 #include "tinyprintf.h"
-
+#include "chry_ringbuffer.h"
+#include "freertos.h"
 static uint32_t segger_rtt_addr = 0;
 
 #define RTT_MAX_BUFFER_SIZE 4096
@@ -10,7 +11,6 @@ static uint32_t segger_rtt_addr = 0;
 __attribute__((aligned(4))) uint8_t rtt_buffer[RTT_MAX_BUFFER_SIZE];
 
 rtt_data_msg_t tRTTMsgObj;
-extern int64_t get_system_time_ms(void);
 
 static SEGGER_RTT_CB _SEGGER_RTT;
 static uint32_t RTT_wAddr, RTT_wSize, RTT_wChannel;
@@ -36,7 +36,7 @@ void read_rtt_and_send_usb(void)
         RTTView_init(RTT_wAddr, RTT_wSize);
     }
     if (segger_rtt_addr != 0) {
-        if ((get_system_time_ms()) > expected_ticks) {
+        if ((bflb_mtimer_get_time_us()/1000) > expected_ticks) {
             do {
                 uint32_t up_addr = segger_rtt_addr + offsetof(SEGGER_RTT_CB, aUp[RTT_wChannel]);
 
@@ -79,6 +79,9 @@ void read_rtt_and_send_usb(void)
                         len += second_part_len;
                     }
 
+                    extern chry_ringbuffer_t g_usbshell;
+                    chry_ringbuffer_write(&g_usbshell, rtt_buffer, len);
+
                     // emit(rtt_sig, &tRTTMsgObj,
                     //     args(
                     //         rtt_buffer,
@@ -96,19 +99,22 @@ void read_rtt_and_send_usb(void)
                 read_delay_ms = 1;
                 read_err_count = 0;
             } while (0);
-            expected_ticks = get_system_time_ms() + read_delay_ms;
+            expected_ticks = bflb_mtimer_get_time_us()/1000 + read_delay_ms;
         }
     }
 }
 
-uint32_t write_rtt_and_receive_usb(uint8_t inputChar)
+uint32_t write_rtt_and_receive_usb(uint8_t inputChar,uint8_t *usb_tmpbuffer, uint32_t nbytes)
 {
+        RTT_wChannel = 0;
+
     uint8_t buffer[16];
     SEGGER_RTT_BUFFER_DOWN down_buffer;
-
+    printf("1\r\n");
     if (segger_rtt_addr != 0) {
         do {
             uint32_t down_addr = segger_rtt_addr + offsetof(SEGGER_RTT_CB, aDown[RTT_wChannel]);
+    printf("2\r\n");
 
             // 读取 RTT 控制块，确保 RTT 仍然有效
             if (swd_read_memory(segger_rtt_addr, buffer, 16)) {
@@ -116,16 +122,20 @@ uint32_t write_rtt_and_receive_usb(uint8_t inputChar)
                     break;
                 }
             }
+    printf("3\r\n");
 
             // 读取 RTT DownBuffer 结构
             if (!swd_read_memory(down_addr, (uint8_t *)&down_buffer, sizeof(SEGGER_RTT_BUFFER_DOWN))) {
                 break;
             }
+    printf("4\r\n");
 
             uint32_t buffer_addr = (uint32_t)down_buffer.pBuffer;
             uint32_t size = down_buffer.SizeOfBuffer;
             uint32_t wrOff = down_buffer.WrOff;
             uint32_t rdOff = down_buffer.RdOff;
+            printf("buffer_addr: 0x%x, size: %d, wrOff: %d, rdOff: %d\r\n", buffer_addr, size, wrOff, rdOff);
+    printf("5\r\n");
 
             // **再次读取 `RdOff` 以确认其是否已更新**
             uint32_t new_rdOff;
@@ -143,18 +153,22 @@ uint32_t write_rtt_and_receive_usb(uint8_t inputChar)
             if (nextWrOff == rdOff) {
                 break; // 缓冲区满，丢弃数据
             }
+    printf("6\r\n");
 
             // **确保 `wrOff` 不会超出缓冲区**
             uint8_t tempBuffer[4] = { inputChar, 0, 0, 0 }; // 预留 4 字节
             if (!swd_write_memory(buffer_addr + wrOff, tempBuffer, 1)) {
                 break;
             }
+    printf("7\r\n");
 
             // **更新 WrOff**
             wrOff = nextWrOff;
             if (!swd_write_word(down_addr + offsetof(SEGGER_RTT_BUFFER_DOWN, WrOff), wrOff)) {
                 break;
             }
+                printf("8\r\n");
+
             // enqueue(&s_tByteQueue,inputChar);
             // fsm_rt_t tFsm = call_fsm( check_string, &s_fsmCheckStr);
             // if(fsm_rt_cpl == tFsm) {
@@ -213,6 +227,12 @@ int cmd_rttview_start(int argc, char **argv)
             printf("DownBuffer Channel %d Size: %d Mode: %d\r\n", i, _SEGGER_RTT.aDown[i].SizeOfBuffer, _SEGGER_RTT.aDown[i].Flags);
             tfp_printf("DownBuffer Channel %d Size: %d Mode: %d\r\n", i, _SEGGER_RTT.aDown[i].SizeOfBuffer, _SEGGER_RTT.aDown[i].Flags);
         }
+
+        while(1){
+            read_rtt_and_send_usb();
+            //write_rtt_and_receive_usb(0);
+            vTaskDelay(1);
+        }
     } else {
         tfp_printf("No find _SEGGER_RTT addr\r\n");
         printf("No find _SEGGER_RTT addr\r\n");
@@ -257,10 +277,10 @@ void RTTView_init(uint32_t wAddr, uint32_t wSize)
     printf("no find _SEGGER_RTT addr\r\n");
 }
 
-// void RTTView_Uninit(void)
-// {
-//     segger_rtt_addr = 0;
-// }
+void RTTView_Uninit(void)
+{
+    segger_rtt_addr = 0;
+}
 
 // void RTTView_start(PikaObj *self, PikaTuple* val)
 // {

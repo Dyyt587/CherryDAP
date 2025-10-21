@@ -2,7 +2,7 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2024-03-30 11:14:00
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-20 02:05:19
+ * @LastEditTime: 2025-10-20 23:38:37
  * @FilePath: \CherryDAP\projects\bl616\main.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -65,7 +65,7 @@ static wifi_conf_t conf = {
     .country_code = "CN",
 };
 
-int flag_cdc_shell=0;
+int flag_cdc_shell = 0;
 extern void shell_init_with_task(struct bflb_device_s *shell);
 
 // int wifi_start_firmware_task(void)
@@ -94,7 +94,7 @@ void dap_main(void *param)
     chry_dap_init(0, 0x20072000);
 
     //RTTView_init(0x24000000, 0x8000);
-     while (1) {
+    while (1) {
         extern int flag_dap_download;
         // if(flag_dap_download >100000 && period!=31){
         //     period=31;
@@ -109,19 +109,16 @@ void dap_main(void *param)
         //     //printf("dap handle %d\r\n",flag_dap_download);
         // }
         chry_dap_handle();
+        extern void chry_rtt_handle(void);
+        chry_rtt_handle();
         chry_dap_usb2uart_handle();
-        if (flag_dap_download==0)
-        {
+        if (flag_dap_download == 0) {
             vTaskDelay(1);
         }
-        
-         
     }
 }
 
-
-typedef enum
-{
+typedef enum {
     USER_BUTTON_0 = 0,
     USER_BUTTON_MAX,
 
@@ -131,10 +128,9 @@ typedef enum
 static const ebtn_btn_param_t defaul_ebtn_param = EBTN_PARAMS_INIT(20, 0, 20, 300, 200, 500, 10);
 
 static ebtn_btn_t btns[] = {
-        EBTN_BUTTON_INIT(USER_BUTTON_0, &defaul_ebtn_param),
+    EBTN_BUTTON_INIT(USER_BUTTON_0, &defaul_ebtn_param),
 
 };
-
 
 /**
  * \brief           Get input state callback
@@ -147,10 +143,11 @@ uint8_t prv_btn_get_state(struct ebtn_btn *btn)
      * Function will return negative number if button is pressed,
      * or zero if button is releases
      */
- 
-    return  bflb_gpio_read(g_gpio, GPIO_PIN_2);
+
+    return bflb_gpio_read(g_gpio, GPIO_PIN_2);
 }
 
+int flag_rttview_start = 0;
 /**
  * \brief           Button event
  *
@@ -159,21 +156,30 @@ uint8_t prv_btn_get_state(struct ebtn_btn *btn)
  */
 void prv_btn_event(struct ebtn_btn *btn, ebtn_evt_t evt)
 {
-    if(btn->key_id==USER_BUTTON_0 && evt==EBTN_EVT_ONCLICK){
-        if(flag_cdc_shell==1)
-        {
-            flag_cdc_shell=0;
+#include "SEGGER_RTTView.h"
+    if (btn->key_id == USER_BUTTON_0 && evt == EBTN_EVT_ONCLICK) {
+        if (flag_cdc_shell == 1) {
+            if (flag_rttview_start == 0) {
+                flag_rttview_start = 1;
+                RTTView_init(0x24000000, 0x8000);
+            } else {
+                flag_rttview_start = 0;
+                RTTView_Uninit();
+            }
+        }
+    }
+    if (btn->key_id == USER_BUTTON_0 && evt == EBTN_EVT_KEEPALIVE && btn->keepalive_cnt == 1) {
+        if (flag_cdc_shell == 1) {
+            flag_cdc_shell = 0;
             shell_set_print((void (*)(char *fmt, ...))printf);
 
-        }else{
+        } else {
             shell_set_print((void (*)(char *fmt, ...))tfp_printf);
-            flag_cdc_shell=1;
+            flag_cdc_shell = 1;
         }
         LOG_I("flag_cdc_shell  = %d\r\n", flag_cdc_shell);
         tfp_printf("flag_cdc_shell  = %d\r\n", flag_cdc_shell);
-       // NVIC_SystemReset();
     }
-
 }
 
 void button_main(void *param)
@@ -181,16 +187,14 @@ void button_main(void *param)
     //extern struct bflb_device_s *g_gpio;
     LOG_I("button_main ...\r\n");
 
-    bflb_gpio_init(g_gpio, GPIO_PIN_2, GPIO_INPUT | GPIO_PULLDOWN | GPIO_SMT_EN | GPIO_DRV_0);  
+    bflb_gpio_init(g_gpio, GPIO_PIN_2, GPIO_INPUT | GPIO_PULLDOWN | GPIO_SMT_EN | GPIO_DRV_0);
     ebtn_init(btns, EBTN_ARRAY_SIZE(btns), 0, 0,
               prv_btn_get_state, prv_btn_event);
-              static int tick=0;
+    static int tick = 0;
     while (1) {
-
         ebtn_process(tick);
-        tick+=5;
+        tick += 5;
         vTaskDelay(5);
- 
     }
 }
 
@@ -232,11 +236,10 @@ void wifi_config1(void *param)
         LOG_I("ssid not find start...\r\n");
         //没有连接过wifi启动配网流程
         vTaskDelay(100);
-        char *argv[] = {"wifi_ap_start","-s","Cubex DAPLink"};
-        wifi_mgmr_ap_start_cmd(3,argv);
+        char *argv[] = { "wifi_ap_start", "-s", "Cubex DAPLink" };
+        wifi_mgmr_ap_start_cmd(3, argv);
         vTaskDelay(100);
         start_http_server();
-
     }
     uint32_t old_code = -1;
     while (1) {
@@ -247,22 +250,21 @@ void wifi_config1(void *param)
             //状态改变
             old_code = new_code;
             //处理wifi事件
-           // wifi_event(new_code);
+            // wifi_event(new_code);
         }
     }
 }
 
-void stdout_putf ( void* p, char c)
+void stdout_putf(void *p, char c)
 {
     extern chry_ringbuffer_t g_usbshell;
     chry_ringbuffer_write(&g_usbshell, &c, 1);
-
 }
 int main(void)
 {
     board_init();
 
-      init_printf(NULL, stdout_putf);
+    init_printf(NULL, stdout_putf);
 
     uartx_preinit();
 

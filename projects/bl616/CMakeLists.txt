@@ -50,6 +50,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/core/usbd_core.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/port/bouffalolab/usb_dc_bl.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/class/cdc/usbd_cdc_acm.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/class/hid/usbd_hid.c
+${CMAKE_CURRENT_SOURCE_DIR}/../../CherryUSB/class/msc/usbd_msc.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../easy_button/ebtn/ebtn.c
 ${addsource}
 )

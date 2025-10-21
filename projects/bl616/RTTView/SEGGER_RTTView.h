@@ -2,7 +2,7 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2025-10-19 02:38:00
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-19 03:15:08
+ * @LastEditTime: 2025-10-20 23:41:32
  * @FilePath: \CherryDAP\projects\bl616\RTTView\SEGGER_RTTView.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -79,8 +79,9 @@ typedef struct {
   SEGGER_RTT_BUFFER_DOWN  aDown[SEGGER_RTT_MAX_NUM_DOWN_BUFFERS];   // Down buffers, transferring information down from host via debug probe to target
 } SEGGER_RTT_CB;
 
-
-uint32_t write_rtt_and_receive_usb(uint8_t inputChar);
+void RTTView_init(uint32_t wAddr, uint32_t wSize);
+void RTTView_Uninit(void);
+uint32_t write_rtt_and_receive_usb(uint8_t inputChar,uint8_t *usb_tmpbuffer, uint32_t nbytes);
 void read_rtt_and_send_usb(void);
 
 #endif
