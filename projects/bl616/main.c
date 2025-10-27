@@ -2,7 +2,7 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2024-03-30 11:14:00
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-20 23:38:37
+ * @LastEditTime: 2025-10-24 01:03:33
  * @FilePath: \CherryDAP\projects\bl616\main.c
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -54,7 +54,7 @@
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-
+extern uint32_t RTT_wAddr,RTT_wSize;
 static struct bflb_device_s *uart0;
 
 static TaskHandle_t wifi_fw_task;
@@ -146,7 +146,7 @@ uint8_t prv_btn_get_state(struct ebtn_btn *btn)
 
     return bflb_gpio_read(g_gpio, GPIO_PIN_2);
 }
-
+int rtt_addr = 0x24000000;
 int flag_rttview_start = 0;
 /**
  * \brief           Button event
@@ -161,7 +161,7 @@ void prv_btn_event(struct ebtn_btn *btn, ebtn_evt_t evt)
         if (flag_cdc_shell == 1) {
             if (flag_rttview_start == 0) {
                 flag_rttview_start = 1;
-                RTTView_init(0x24000000, 0x8000);
+                RTTView_init(RTT_wAddr, RTT_wSize);
             } else {
                 flag_rttview_start = 0;
                 RTTView_Uninit();
@@ -215,15 +215,24 @@ static config_event event = NULL;
         }                              \
     } while (0)
 
+extern uint32_t RTT_wAddr;
 void wifi_config1(void *param)
 {
     static char ssid[] = "@Dyyt";
     static char pass[] = "123456789";
-    flash_set_wifi_info(ssid, pass);
+    static char rtt_addrc[] = "0x24000000";
+    static char cdc_uart_mode[] = "2";
+
+    // flash_set_wifi_info(ssid, pass);
+    // flash_set_cfg_info(rtt_addrc, cdc_uart_mode);
     flash_get_data(ssid, KEY_SSID, 16);
     flash_get_data(pass, KEY_PASS, 16);
-    LOG_I("flash read wifi info: [s: %s,k: %s]\r\n", ssid, pass);
 
+    flash_get_data(rtt_addrc, KEY_RTT_ADDR, 16);
+    flash_get_data(cdc_uart_mode, KEY_CDC_UART_MODE, 16);
+    sscanf(rtt_addrc, "%x", &RTT_wAddr);
+    LOG_I("flash read wifi info: [s: %s,k: %s]\r\n", ssid, pass);
+    LOG_I("flash read cfg info: [rtt addr : 0x%x,cdc uart mode: %s]\r\n", RTT_wAddr, cdc_uart_mode);
     vTaskDelay(10);
 
     //只需要检查ssid，密码可以是空的

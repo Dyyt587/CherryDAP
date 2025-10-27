@@ -13,11 +13,12 @@ __attribute__((aligned(4))) uint8_t rtt_buffer[RTT_MAX_BUFFER_SIZE];
 rtt_data_msg_t tRTTMsgObj;
 
 static SEGGER_RTT_CB _SEGGER_RTT;
-static uint32_t RTT_wAddr, RTT_wSize, RTT_wChannel;
+static uint32_t RTT_wAddr, RTT_wSize = 0x1000, RTT_wChannel;
 
 // static byte_queue_t       s_tByteQueue;
 // static fsm(check_string)  s_fsmCheckStr;
 // static get_byte_t         s_tGetByte;
+
 // static uint8_t            s_chByteBuf[64];
 
 void RTTView_init(uint32_t wAddr, uint32_t wSize);
@@ -31,12 +32,17 @@ void read_rtt_and_send_usb(void)
     static uint8_t read_err_count = 0;
     static int64_t expected_ticks = 0;
 
-    if (read_err_count > 2) {
+    if (read_err_count > 2 || segger_rtt_addr == 0) {
         read_err_count = 0;
-        RTTView_init(RTT_wAddr, RTT_wSize);
+        if (!swd_init_debug()) {
+            tfp_printf("swd init error\r\n");
+            printf("swd init error\r\n");
+            return;
+        }
+        //RTTView_init(RTT_wAddr, RTT_wSize);
     }
     if (segger_rtt_addr != 0) {
-        if ((bflb_mtimer_get_time_us()/1000) > expected_ticks) {
+        if ((bflb_mtimer_get_time_us() / 1000) > expected_ticks) {
             do {
                 uint32_t up_addr = segger_rtt_addr + offsetof(SEGGER_RTT_CB, aUp[RTT_wChannel]);
 
@@ -91,7 +97,7 @@ void read_rtt_and_send_usb(void)
                     // **逐步更新 RdOff 而不是直接设为 wrOff**
                     rdOff = (rdOff + len) % size;
                     if (!swd_write_word(up_addr + offsetof(SEGGER_RTT_BUFFER_UP, RdOff), rdOff)) {
-                        read_delay_ms = 1000;
+                        read_delay_ms = 10;
                         read_err_count++;
                         break;
                     }
@@ -99,22 +105,40 @@ void read_rtt_and_send_usb(void)
                 read_delay_ms = 1;
                 read_err_count = 0;
             } while (0);
-            expected_ticks = bflb_mtimer_get_time_us()/1000 + read_delay_ms;
+            expected_ticks = bflb_mtimer_get_time_us() / 1000 + read_delay_ms;
         }
     }
 }
 
-uint32_t write_rtt_and_receive_usb(uint8_t inputChar,uint8_t *usb_tmpbuffer, uint32_t nbytes)
+uint32_t write_rtt_and_receive_usb(uint8_t inputChar, uint8_t *usb_tmpbuffer, uint32_t nbytes)
 {
-        RTT_wChannel = 0;
+    RTT_wChannel = 0;
 
     uint8_t buffer[16];
     SEGGER_RTT_BUFFER_DOWN down_buffer;
-    printf("1\r\n");
-    if (segger_rtt_addr != 0) {
+    uint32_t written = 0;
+
+    // 确定要写入的数据源和长度
+    uint8_t *write_data = NULL;
+    uint32_t write_len = 0;
+    uint8_t single_byte_buffer[1];
+
+    if (usb_tmpbuffer != NULL && nbytes > 0) {
+        // 多字节写入模式
+        write_data = usb_tmpbuffer;
+        write_len = nbytes;
+    } else {
+        // 单字节写入模式
+        single_byte_buffer[0] = inputChar;
+        write_data = single_byte_buffer;
+        write_len = 1;
+    }
+
+    // printf("1\r\n");
+    if (segger_rtt_addr != 0 && write_len > 0) {
         do {
             uint32_t down_addr = segger_rtt_addr + offsetof(SEGGER_RTT_CB, aDown[RTT_wChannel]);
-    printf("2\r\n");
+            // printf("2\r\n");
 
             // 读取 RTT 控制块，确保 RTT 仍然有效
             if (swd_read_memory(segger_rtt_addr, buffer, 16)) {
@@ -122,20 +146,20 @@ uint32_t write_rtt_and_receive_usb(uint8_t inputChar,uint8_t *usb_tmpbuffer, uin
                     break;
                 }
             }
-    printf("3\r\n");
+            // printf("3\r\n");
 
             // 读取 RTT DownBuffer 结构
             if (!swd_read_memory(down_addr, (uint8_t *)&down_buffer, sizeof(SEGGER_RTT_BUFFER_DOWN))) {
                 break;
             }
-    printf("4\r\n");
+            // printf("4\r\n");
 
             uint32_t buffer_addr = (uint32_t)down_buffer.pBuffer;
             uint32_t size = down_buffer.SizeOfBuffer;
             uint32_t wrOff = down_buffer.WrOff;
             uint32_t rdOff = down_buffer.RdOff;
-            printf("buffer_addr: 0x%x, size: %d, wrOff: %d, rdOff: %d\r\n", buffer_addr, size, wrOff, rdOff);
-    printf("5\r\n");
+            //         printf("buffer_addr: 0x%x, size: %d, wrOff: %d, rdOff: %d\r\n", buffer_addr, size, wrOff, rdOff);
+            // printf("5\r\n");
 
             // **再次读取 `RdOff` 以确认其是否已更新**
             uint32_t new_rdOff;
@@ -144,46 +168,58 @@ uint32_t write_rtt_and_receive_usb(uint8_t inputChar,uint8_t *usb_tmpbuffer, uin
             }
 
             if (new_rdOff != rdOff) {
-                // 说明 `RdOff` 已更新，重新检查 `wrOff` 是否仍然有效
+                // 说明 `RdOff` 已更新，重新检查可用空间
                 rdOff = new_rdOff;
             }
 
-            // **检查缓冲区是否已满**
-            uint32_t nextWrOff = (wrOff + 1) % size;
-            if (nextWrOff == rdOff) {
-                break; // 缓冲区满，丢弃数据
+            // **计算可用空间**
+            uint32_t available;
+            if (wrOff >= rdOff) {
+                available = size - wrOff + rdOff - 1;
+            } else {
+                available = rdOff - wrOff - 1;
             }
-    printf("6\r\n");
 
-            // **确保 `wrOff` 不会超出缓冲区**
-            uint8_t tempBuffer[4] = { inputChar, 0, 0, 0 }; // 预留 4 字节
-            if (!swd_write_memory(buffer_addr + wrOff, tempBuffer, 1)) {
-                break;
+            // **限制写入长度不超过可用空间**
+            uint32_t to_write = (write_len < available) ? write_len : available;
+
+            if (to_write == 0) {
+                break; // 缓冲区满
             }
-    printf("7\r\n");
+            // printf("6\r\n");
+
+            // **写入数据，处理环形缓冲区边界**
+            uint32_t first_part = size - wrOff;
+            if (to_write <= first_part) {
+                // 数据不跨越缓冲区边界
+                if (!swd_write_memory(buffer_addr + wrOff, write_data, to_write)) {
+                    break;
+                }
+                wrOff = (wrOff + to_write) % size;
+                written = to_write;
+            } else {
+                // 数据跨越缓冲区边界，分两次写入
+                // 第一部分：写到缓冲区末尾
+                if (!swd_write_memory(buffer_addr + wrOff, write_data, first_part)) {
+                    break;
+                }
+                // 第二部分：从缓冲区开头写入剩余数据
+                uint32_t second_part = to_write - first_part;
+                if (!swd_write_memory(buffer_addr, write_data + first_part, second_part)) {
+                    break;
+                }
+                wrOff = second_part;
+                written = to_write;
+            }
+            // printf("7\r\n");
 
             // **更新 WrOff**
-            wrOff = nextWrOff;
             if (!swd_write_word(down_addr + offsetof(SEGGER_RTT_BUFFER_DOWN, WrOff), wrOff)) {
                 break;
             }
-                printf("8\r\n");
-
-            // enqueue(&s_tByteQueue,inputChar);
-            // fsm_rt_t tFsm = call_fsm( check_string, &s_fsmCheckStr);
-            // if(fsm_rt_cpl == tFsm) {
-            //     get_all_peeked(&s_tByteQueue);
-            //     uint32_t rtt_addr = segger_rtt_addr;
-            //     segger_rtt_addr = 0;
-            //     return rtt_addr;
-            // }else if(fsm_rt_user_req_drop == tFsm) {
-            //     dequeue(&s_tByteQueue,&inputChar);
-            // }else {
-            //     reset_peek(&s_tByteQueue);
-            // }
         } while (0);
     }
-    return segger_rtt_addr;
+    return written; // 返回实际写入的字节数
 }
 
 // static uint16_t receive_usb_get_byte(get_byte_t *ptThis,uint8_t *pchByte, uint16_t hwLength)
@@ -228,7 +264,7 @@ int cmd_rttview_start(int argc, char **argv)
             tfp_printf("DownBuffer Channel %d Size: %d Mode: %d\r\n", i, _SEGGER_RTT.aDown[i].SizeOfBuffer, _SEGGER_RTT.aDown[i].Flags);
         }
 
-        while(1){
+        while (1) {
             read_rtt_and_send_usb();
             //write_rtt_and_receive_usb(0);
             vTaskDelay(1);
@@ -244,6 +280,13 @@ SHELL_CMD_EXPORT_ALIAS(cmd_rttview_start, rttview_start, rttview start.);
 
 void RTTView_init(uint32_t wAddr, uint32_t wSize)
 {
+    // if (!swd_init_debug()) {
+    //     tfp_printf("swd init error\r\n");
+    //     printf("swd init error\r\n");
+    //     return;
+    // }
+    // segger_rtt_addr = 0x2400099c;
+
     uint8_t buffer[16];
     segger_rtt_addr = 0;
     if (!swd_init_debug()) {

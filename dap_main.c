@@ -732,9 +732,7 @@ void chry_dap_usb2uart_handle(void)
             buffer = chry_ringbuffer_linear_read_setup(&g_usbrx, &size);
             extern int flag_rttview_start;
             if (flag_rttview_start) {
-                for (int i = 0; i < size; i++) {
-                    write_rtt_and_receive_usb('a', (*buffer), size);
-                }
+                 write_rtt_and_receive_usb(0, (*buffer), size-1);
 
             } else {
                 shell_exe_cmd(buffer, size);

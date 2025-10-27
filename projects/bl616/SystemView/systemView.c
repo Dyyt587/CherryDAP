@@ -52,7 +52,7 @@ extern rtt_data_msg_t  tRTTMsgObj;
 extern int64_t get_system_time_ms(void);
 
 static SEGGER_RTT_CB _SEGGER_RTT;
-static uint32_t RTT_wAddr,RTT_wSize,RTT_wChannel;
+uint32_t RTT_wAddr,RTT_wSize = 0x1000,RTT_wChannel;
 
 // static byte_queue_t       s_tByteQueue;
 // static fsm(check_string)  s_fsmCheckStr;
