@@ -12,10 +12,10 @@
 #include "usbd_cdc.h"
 
 void app_main() {
-    uartx_preinit();
-    chry_dap_init(0, ESP_USBD_BASE);
+     uartx_preinit();
+     chry_dap_init(0, ESP_USBD_BASE);
     while (1) {
-        chry_dap_handle();
-        chry_dap_usb2uart_handle();
+        // chry_dap_handle();
+        // chry_dap_usb2uart_handle();
     }
 }

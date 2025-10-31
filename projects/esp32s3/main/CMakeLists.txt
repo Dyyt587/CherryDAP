@@ -1,20 +1,37 @@
 # The following lines of boilerplate have to be in your project's CMakeLists
 # in this exact order for cmake to work correctly
+# file(GLOB_RECURSE SOURCES
+#     "usb2uart.c"
+#     "main.c"
+#     "dap_main.c"
+#     "../dap_main.c"
+#     "../DAP/Source/*.c"
+#     "../CherryRB/*.c"
+#     )
+
+# set(include_dirs 
+#     "."
+#     "../"
+#     "../DAP/Include"
+#     "../CherryRB"
+#     )
+
 file(GLOB_RECURSE SOURCES
     "usb2uart.c"
     "main.c"
     "dap_main.c"
-    "../dap_main.c"
-    "../DAP/Source/*.c"
     "../CherryRB/*.c"
+    "../DAP_NEW/source/*.c"
     )
 
 set(include_dirs 
     "."
     "../"
-    "../DAP/Include"
+    "../DAP_NEW/include"
+    "../DAP_NEW/config"
     "../CherryRB"
     )
+
 idf_component_register(SRCS ${SOURCES}
                        INCLUDE_DIRS ${include_dirs}
                        REQUIRES esp_http_client nvs_flash driver usb
