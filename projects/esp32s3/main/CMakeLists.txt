@@ -3,16 +3,17 @@
 file(GLOB_RECURSE SOURCES
     "usb2uart.c"
     "main.c"
-    "../../../dap_main.c"
-    "../../../DAP/Source/*.c"
-    "../../../CherryRB/*.c"
+    "dap_main.c"
+    "../dap_main.c"
+    "../DAP/Source/*.c"
+    "../CherryRB/*.c"
     )
 
 set(include_dirs 
     "."
-    "../../../"
-    "../../../DAP/Include"
-    "../../../CherryRB"
+    "../"
+    "../DAP/Include"
+    "../CherryRB"
     )
 idf_component_register(SRCS ${SOURCES}
                        INCLUDE_DIRS ${include_dirs}

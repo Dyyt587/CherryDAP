@@ -141,8 +141,8 @@ void chry_dap_usb2uart_uart_config_callback(struct cdc_line_coding *line_coding)
 {
     uart_config_t uart_config;
 
-    uart_config.flags.allow_pd = 0;
-    uart_config.flags.backup_before_sleep = 0;
+    // uart_config.flags.allow_pd = 0;
+    // uart_config.flags.backup_before_sleep = 0;
 
     uart_config.baud_rate = line_coding->dwDTERate;
     uart_config.data_bits = line_coding->bDataBits ? line_coding->bDataBits - 5 : UART_DATA_8_BITS;

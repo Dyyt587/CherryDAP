@@ -16,7 +16,7 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 5.4.0
+    version: 5.1.6
 direct_dependencies:
 - cherry-embedded/cherryusb
 - idf
