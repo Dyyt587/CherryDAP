@@ -66,7 +66,7 @@ This information includes:
 
 /// Processor Clock of the Cortex-M MCU used in the Debug Unit.
 /// This value is uDAP_Commosed to calculate the SWD/JTAG clock speed.
-#define CPU_CLOCK 36000000U
+#define CPU_CLOCK 24000000U
 
 // #define MAX_USER_CLOCK 16000000 ///< Specifies the max Debug Clock in Hz.
 
@@ -188,9 +188,11 @@ __STATIC_INLINE uint8_t DAP_GetVendorString(char *str)
 {
   // In fact, Keil can get the corresponding information through USB
   // without filling in this information.
-  // (void)str;
-  strcpy(str, "MGodmonkey");
-  return (sizeof("MGodmonkey"));
+    //   (void)str;
+    // return (0U);
+  const char _str[] = "CubeX"; 
+  strcpy(str, _str);
+  return (sizeof(_str));
 }
 
 /**
@@ -201,9 +203,11 @@ __STATIC_INLINE uint8_t DAP_GetVendorString(char *str)
  */
 __STATIC_INLINE uint8_t DAP_GetProductString(char *str)
 {
-  //(void)str;
-  strcpy(str, "CMSIS-DAP v2");
-  return (sizeof("CMSIS-DAP v2"));
+    //   (void)str;
+    // return (0U);
+  const char _str[] = "CubeX CMSIS-DAP v2"; 
+  strcpy(str, _str);
+  return (sizeof(_str));
 }
 
 /**
@@ -214,8 +218,10 @@ __STATIC_INLINE uint8_t DAP_GetProductString(char *str)
  */
 __STATIC_INLINE uint8_t DAP_GetSerNumString(char *str)
 {
-  strcpy(str, "1234");
-  return (sizeof("1234"));
+    (void)str;
+    return (0U);
+  // strcpy(str, "1234");
+  // return (sizeof("1234"));
 }
 
 /**
@@ -578,7 +584,14 @@ __STATIC_FORCEINLINE void PIN_SWDIO_OUT_DISABLE(void)
   // set \ref gpio_set_dircetion -> INPUT
   // Note that the input is not always connected.
   gpio_ll_input_enable(&GPIO, PIN_SWDIO_MOSI);
-  gpio_ll_set_level(&GPIO, PIN_SWDIO_MOSI, 1);
+
+#if (PIN_SWDIO_MOSI < 32)
+  GPIO.out_w1ts = (1 << PIN_SWDIO_MOSI);
+#else
+  GPIO.out_w1ts.data = (1 << (PIN_SWDIO_MOSI - 32));
+#endif
+
+//  gpio_ll_set_level(&GPIO, PIN_SWDIO_MOSI, 1);
 }
 
 // TDI Pin I/O ---------------------------------------------
@@ -605,7 +618,12 @@ __STATIC_FORCEINLINE void PIN_TDI_OUT(uint32_t bit)
   {
     
     // set bit
-    GPIO_SET_LEVEL_HIGH(PIN_TDI);
+    #if (PIN_TDI < 32)
+  GPIO.out_w1ts = (1 << PIN_TDI);
+#else
+  GPIO.out_w1ts.data = (1 << (PIN_TDI - 32));
+#endif
+   // GPIO_SET_LEVEL_HIGH(PIN_TDI);
   }
   else
   {

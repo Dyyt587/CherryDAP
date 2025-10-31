@@ -1,3 +1,11 @@
+/*
+ * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
+ * @Date: 2025-10-30 15:49:44
+ * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
+ * @LastEditTime: 2025-10-31 22:58:48
+ * @FilePath: \esp32s3\main\dap_main.h
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #ifndef DAP_MAIN_H
 #define DAP_MAIN_H
 
@@ -10,17 +18,18 @@
 #include "DAP.h"
 
 #define DAP_IN_EP  0x81
-#define DAP_OUT_EP 0x02
+#define DAP_OUT_EP 0x01
 
-#define CDC_IN_EP  0x83
-#define CDC_OUT_EP 0x04
-#define CDC_INT_EP 0x85
+#define CDC_IN_EP  0x82
+#define CDC_OUT_EP 0x02
 
-#define MSC_IN_EP  0x86
-#define MSC_OUT_EP 0x07
+#define CDC_INT_EP 0x83
 
-#define HID_IN_EP  0x88
-#define HID_OUT_EP 0x09
+#define MSC_IN_EP  0x84
+#define MSC_OUT_EP 0x04
+
+#define HID_IN_EP  0x85
+#define HID_OUT_EP 0x04
 
 #define USBD_VID           0x0D28
 #define USBD_PID           0x0204
@@ -47,7 +56,7 @@
 #define CONFIG_USBRX_RINGBUF_SIZE  (8 * 1024)
 
 #ifndef CONFIG_CHERRYDAP_USE_MSC
-#define CONFIG_CHERRYDAP_USE_MSC 0
+#define CONFIG_CHERRYDAP_USE_MSC 1
 #endif
 
 #ifndef CONFIG_CHERRYDAP_USE_CUSTOM_HID

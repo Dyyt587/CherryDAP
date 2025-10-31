@@ -97,7 +97,8 @@ void DAP_SPI_ReadBits(const uint8_t count, uint8_t *buf) {
     data_buf[0] = DAP_SPI.data_buf[0];
     data_buf[1] = DAP_SPI.data_buf[1];
 
-    for (i = 0; i < div_round_up(count, 8); i++)
+    int bytes = div_round_up(count, 8);
+    for (i = 0; i < bytes; i++)
     {
         buf[i] = pData[i];
     }

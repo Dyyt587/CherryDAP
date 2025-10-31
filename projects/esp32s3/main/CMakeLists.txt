@@ -34,6 +34,6 @@ set(include_dirs
 
 idf_component_register(SRCS ${SOURCES}
                        INCLUDE_DIRS ${include_dirs}
-                       REQUIRES esp_http_client nvs_flash driver usb
+                       REQUIRES vfs esp_http_client nvs_flash driver usb spi_flash esp_partition fatfs wear_levelling
                        WHOLE_ARCHIVE)
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-unused-const-variable -Wno-format -Wno-format-truncation -Wno-incompatible-pointer-types)

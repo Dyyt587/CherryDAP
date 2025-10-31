@@ -1,4 +1,11 @@
 #include "dap_main.h"
+#include "esp_partition.h"
+#include "esp_log.h"
+#include "esp_vfs.h"
+#include "esp_vfs_fat.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define CMSIS_DAP_INTERFACE_SIZE (9 + 7 + 7)
 #define CUSTOM_HID_LEN           (9 + 9 + 7 + 7)
@@ -414,6 +421,8 @@ void dap_in_callback(uint8_t busid, uint8_t ep, uint32_t nbytes)
     } else {
         USB_ResponseIdle = 1U;
     }
+            // chry_dap_handle();
+
 }
 
 void usbd_cdc_acm_bulk_out(uint8_t busid, uint8_t ep, uint32_t nbytes)
@@ -711,32 +720,266 @@ __WEAK void chry_dap_usb2uart_uart_send_bydma(uint8_t *data, uint16_t len)
 }
 
 #if CONFIG_CHERRYDAP_USE_MSC
+
+static const char *TAG = "MSC";
+
 #define BLOCK_SIZE  512
-#define BLOCK_COUNT 10
+int  BLOCK_COUNT =  (9 * 1024 * 1024 / BLOCK_SIZE);  // 9MB storage partition
 
-typedef struct
+// Partition handle for MSC storage
+static const esp_partition_t *msc_partition = NULL;
+
+// Wear leveling handle for FAT filesystem
+static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+
+// Flag to track if FAT is mounted
+static bool fat_mounted = false;
+
+/**
+ * @brief Initialize and mount FAT filesystem on MSC partition
+ * @return ESP_OK on success, error code otherwise
+ */
+ esp_err_t msc_fat_mount(void)
 {
-    uint8_t BlockSpace[BLOCK_SIZE];
-} BLOCK_TYPE;
+    if (fat_mounted) {
+        ESP_LOGD(TAG, "FAT already mounted");
+        return ESP_OK;
+    }
 
-BLOCK_TYPE mass_block[BLOCK_COUNT];
+    if (msc_partition == NULL) {
+        ESP_LOGE(TAG, "No partition available for FAT mount");
+        return ESP_FAIL;
+    }
 
-void usbd_msc_get_cap(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
+    // Configure VFS FAT mount
+    esp_vfs_fat_mount_config_t mount_config = {
+        .max_files = 4,                    // Maximum number of files open at the same time
+        .format_if_mount_failed = true,    // Format the partition if mount fails
+        .allocation_unit_size = CONFIG_WL_SECTOR_SIZE  // Use wear leveling sector size
+    };
+
+    // Mount FAT filesystem with wear leveling
+    esp_err_t err = esp_vfs_fat_spiflash_mount("/fat", "storage", &mount_config, &s_wl_handle);
+    
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to mount FAT filesystem: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    fat_mounted = true;
+    ESP_LOGI(TAG, "FAT filesystem mounted successfully at /fat");
+    
+    // Optional: Create a test file to verify functionality
+    FILE* test_file = fopen("/fat/msc_ready.txt", "w");
+    if (test_file != NULL) {
+        fprintf(test_file, "CherryDAP MSC initialized\n");
+        fclose(test_file);
+        ESP_LOGI(TAG, "Test file created: /fat/msc_ready.txt");
+    }
+    
+    return ESP_OK;
+}
+
+/**
+ * @brief Unmount FAT filesystem
+ */
+static void msc_fat_unmount(void)
 {
-    *block_num = 1000; //Pretend having so many buffer,not has actually.
+    if (fat_mounted) {
+        esp_vfs_fat_spiflash_unmount("/fat", s_wl_handle);
+        fat_mounted = false;
+        s_wl_handle = WL_INVALID_HANDLE;
+        ESP_LOGI(TAG, "FAT filesystem unmounted");
+    }
+}
+
+/**
+ * @brief Initialize MSC partition and mount FAT filesystem
+ * @note Should be called before any MSC operations
+ */
+static void msc_partition_init(void)
+{
+    if (msc_partition == NULL) {
+        // Find the partition named "storage" with type DATA
+        msc_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "storage");
+        if (msc_partition == NULL) {
+            ESP_LOGE(TAG, "Failed to find storage partition");
+        } else {
+            ESP_LOGI(TAG, "MSC using storage partition at 0x%lx, size: %lu bytes", 
+                     msc_partition->address, msc_partition->size);
+            BLOCK_COUNT = msc_partition->size / BLOCK_SIZE;
+            
+            // Auto-mount FAT filesystem
+            // esp_err_t err = msc_fat_mount();
+            // if (err == ESP_OK) {
+            //     ESP_LOGI(TAG, "FAT filesystem ready for use");
+            // } else {
+            //     ESP_LOGW(TAG, "FAT mount failed, MSC will operate in raw mode");
+            // }
+        }
+    }
+}
+
+/**
+ * @brief Get MSC capacity
+ * @param busid USB bus ID
+ * @param lun Logical Unit Number
+ * @param block_num Output: total number of blocks
+ * @param block_size Output: size of each block in bytes
+ */
+void usbd_msc_get_cap(uint8_t busid, uint8_t lun, uint32_t *block_num, uint32_t *block_size)
+{
+    msc_partition_init();
+    
     *block_size = BLOCK_SIZE;
+    if (msc_partition != NULL) {
+        *block_num = msc_partition->size / BLOCK_SIZE;
+    } else {
+        *block_num = 0;  // No partition available
+    }
+    
+    ESP_LOGD(TAG, "MSC capacity: %lu blocks x %lu bytes = %lu bytes", 
+             *block_num, *block_size, (*block_num) * (*block_size));
 }
-int usbd_msc_sector_read(uint32_t sector, uint8_t *buffer, uint32_t length)
+/**
+ * @brief Read sectors from flash partition
+ * @param busid USB bus ID
+ * @param lun Logical Unit Number
+ * @param sector Starting sector number
+ * @param buffer Buffer to store read data
+ * @param length Number of bytes to read (should be multiple of BLOCK_SIZE)
+ * @return 0 on success, negative on error
+ */
+int usbd_msc_sector_read(uint8_t busid, uint8_t lun, uint32_t sector, uint8_t *buffer, uint32_t length)
 {
-    if (sector < 10)
-        memcpy(buffer, mass_block[sector].BlockSpace, length);
+    msc_partition_init();
+    
+    if (msc_partition == NULL) {
+        ESP_LOGE(TAG, "No partition available for read");
+        return -1;
+    }
+    
+    // Calculate offset in partition
+    uint32_t offset = sector * BLOCK_SIZE;
+    
+    // Check bounds
+    if (offset + length > msc_partition->size) {
+        ESP_LOGE(TAG, "Read out of bounds: offset=%lu, length=%lu, size=%lu", 
+                 offset, length, msc_partition->size);
+        return -1;
+    }
+    
+    // Read from partition
+    esp_err_t ret = esp_partition_read(msc_partition, offset, buffer, length);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read partition at sector %lu: %s", sector, esp_err_to_name(ret));
+        return -1;
+    }
+    
+    ESP_LOGD(TAG, "Read %lu bytes from sector %lu (offset 0x%lx)", length, sector, offset);
+    return 0;
+}
+#define SPI_FLASH_SEC_SIZE (4096*8)
+/**
+ * @brief Write sectors to flash partition
+ * @param busid USB bus ID
+ * @param lun Logical Unit Number
+ * @param sector Starting sector number
+ * @param buffer Buffer containing data to write
+ * @param length Number of bytes to write (should be multiple of BLOCK_SIZE)
+ * @return 0 on success, negative on error
+ */
+int usbd_msc_sector_write(uint8_t busid, uint8_t lun, uint32_t sector, uint8_t *buffer, uint32_t length)
+{
+    msc_partition_init();
+    
+    if (msc_partition == NULL) {
+        ESP_LOGE(TAG, "No partition available for write");
+        return -1;
+    }
+    
+    // // Calculate offset in partition
+    // uint32_t offset = sector * BLOCK_SIZE;
+    
+    // // Check bounds
+    // if (offset + length > msc_partition->size) {
+    //     ESP_LOGE(TAG, "Write out of bounds: offset=%lu, length=%lu, size=%lu", 
+    //              offset, length, msc_partition->size);
+    //     return -1;
+    // }
+    
+    // // Erase before write (flash requires erase before write)
+    // // Note: esp_partition_write will handle erase internally if needed,
+    // // but for proper flash lifecycle, we should erase sectors explicitly
+    // // Calculate aligned erase range (must be SPI_FLASH_SEC_SIZE aligned)
+    // uint32_t erase_start = (offset / SPI_FLASH_SEC_SIZE) * SPI_FLASH_SEC_SIZE;
+    // uint32_t erase_end = ((offset + length + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE) * SPI_FLASH_SEC_SIZE;
+    // uint32_t erase_size = erase_end - erase_start;
+    
+    // esp_err_t ret = esp_partition_erase_range(msc_partition, erase_start, erase_size);
+    // if (ret != ESP_OK) {
+    //     ESP_LOGE(TAG, "Failed to erase partition at sector %lu: %s", sector, esp_err_to_name(ret));
+    //     return -1;
+    // }
+    
+    // // Write to partition
+    // ret = esp_partition_write(msc_partition, offset, buffer, length);
+    // if (ret != ESP_OK) {
+    //     ESP_LOGE(TAG, "Failed to write partition at sector %lu: %s", sector, esp_err_to_name(ret));
+    //     return -1;
+    // }
+    
+    ESP_LOGI(TAG, "Wrote %lu bytes to sector %lu (offset 0x%lx)", length, sector, 0);
     return 0;
 }
 
-int usbd_msc_sector_write(uint32_t sector, uint8_t *buffer, uint32_t length)
+/**
+ * @brief Example function demonstrating FAT filesystem operations
+ * @note This is an optional demonstration function
+ */
+void msc_fat_example(void)
 {
-    if (sector < 10)
-        memcpy(mass_block[sector].BlockSpace, buffer, length);
-    return 0;
+    if (!fat_mounted) {
+        ESP_LOGE(TAG, "FAT filesystem not mounted, cannot run example");
+        return;
+    }
+
+    ESP_LOGI(TAG, "=== FAT Filesystem Example Start ===");
+
+    // 1. Write data to file
+    FILE* f = fopen("/fat/test_data.bin", "wb");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for writing");
+        return;
+    }
+    
+    ESP_LOGI(TAG, "Writing test data to /fat/test_data.bin");
+    int test_array[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    size_t written = fwrite(test_array, sizeof(int), 10, f);
+    fclose(f);
+    ESP_LOGI(TAG, "Wrote %d integers to file", written);
+
+    // 2. Read data from file
+    f = fopen("/fat/test_data.bin", "rb");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file for reading");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Reading test data from /fat/test_data.bin");
+    int read_array[10];
+    size_t read = fread(read_array, sizeof(int), 10, f);
+    fclose(f);
+    ESP_LOGI(TAG, "Read %d integers from file", read);
+
+    // 3. Verify data
+    ESP_LOGI(TAG, "Verifying data:");
+    for (int i = 0; i < 10; i++) {
+        ESP_LOGI(TAG, "  [%d] = %d %s", i, read_array[i], 
+                 (read_array[i] == test_array[i]) ? "✓" : "✗");
+    }
+
+    ESP_LOGI(TAG, "=== FAT Filesystem Example End ===");
 }
+
 #endif
