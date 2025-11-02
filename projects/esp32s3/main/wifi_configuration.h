@@ -1,0 +1,75 @@
+/*
+ * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
+ * @Date: 2025-10-26 19:33:37
+ * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
+ * @LastEditTime: 2025-10-26 20:07:40
+ * @FilePath: \ESP32-Debugger\project\ESP32S3_IDF5_x_proj\main\include\wifi_configuration.h
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+/**
+ * @file wifi_configuration.h
+ * @brief Fill in your wifi configuration information here.
+ * @version 0.1
+ * @date 2020-01-22
+ *
+ * @copyright Copyright (c) 2020
+ *
+ */
+#ifndef __WIFI_CONFIGURATION__
+#define __WIFI_CONFIGURATION__
+
+static struct {
+    const char *ssid;
+    const char *password;
+} wifi_list[] __attribute__((unused)) = {
+
+    { .ssid = "@Dyyt", .password = "123456789" },
+    { .ssid = "MGodmonkey", .password = "1234567890" },
+    { .ssid = "DAP", .password = "12345678" },
+    // Add your WAP like this:
+    // {.ssid = "your ssid", .password = "your password"},
+};
+
+#define WIFI_LIST_SIZE (sizeof(wifi_list) / sizeof(wifi_list[0]))
+
+#define USE_MDNS 1
+// Use the address "dap.local" to access the device
+#define MDNS_HOSTNAME "dap"
+#define MDNS_INSTANCE "DAP mDNS"
+
+#define USE_STATIC_IP 0
+// If you don't want to specify the ip configuration, then ignore the following items.
+#define DAP_IP_ADDRESS "192.169.0.139"
+#define DAP_IP_GATEWAY "92.169.0.1"
+#define DAP_IP_NETMASK "255.255.255.0"
+
+#define USE_OTA 0
+
+#define USE_UART_BRIDGE      0
+#define UART_BRIDGE_PORT     1234
+#define UART_BRIDGE_BAUDRATE 74880
+
+// DO NOT CHANGE
+#define USE_TCP_NETCONN 0
+
+#define WIFI_PORT           3240
+#define CONFIG_EXAMPLE_IPV4 1
+#define USE_KCP             0
+#define MTU_SIZE            1500
+//
+
+#if (USE_TCP_NETCONN == 1 && USE_KCP == 1)
+#error Can not use KCP and TCP at the same time!
+#endif
+
+#if (USE_KCP == 1)
+#warning KCP is a very experimental feature, and it should not be used under any circumstances. Please make sure what you are doing. Related usbip version: https://github.com/windowsair/usbip-win
+#endif
+
+extern int printf(const char *, ...);
+inline int os_printf(const char *__restrict __fmt, ...)
+{
+    return printf(__fmt, __builtin_va_arg_pack());
+}
+
+#endif

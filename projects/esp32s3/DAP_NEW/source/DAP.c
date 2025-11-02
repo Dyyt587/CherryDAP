@@ -37,6 +37,9 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
+
+static const char *TAG = "DAP";
 
 #if (DAP_PACKET_SIZE < 64U)
 #error "Minimum Packet Size is 64!"
@@ -1733,6 +1736,54 @@ __WEAK uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *respon
   return ((1U << 16) | 1U);
 }
 
+// Get DAP command name for logging
+static const char* DAP_GetCommandName(uint8_t cmd) {
+  switch (cmd) {
+    case ID_DAP_Info: return "Info";
+    case ID_DAP_HostStatus: return "HostStatus";
+    case ID_DAP_Connect: return "Connect";
+    case ID_DAP_Disconnect: return "Disconnect";
+    case ID_DAP_TransferConfigure: return "TransferConfigure";
+    case ID_DAP_Transfer: return "Transfer";
+    case ID_DAP_TransferBlock: return "TransferBlock";
+    case ID_DAP_TransferAbort: return "TransferAbort";
+    case ID_DAP_WriteABORT: return "WriteABORT";
+    case ID_DAP_Delay: return "Delay";
+    case ID_DAP_ResetTarget: return "ResetTarget";
+    case ID_DAP_SWJ_Pins: return "SWJ_Pins";
+    case ID_DAP_SWJ_Clock: return "SWJ_Clock";
+    case ID_DAP_SWJ_Sequence: return "SWJ_Sequence";
+    case ID_DAP_SWD_Configure: return "SWD_Configure";
+    case ID_DAP_SWD_Sequence: return "SWD_Sequence";
+    case ID_DAP_JTAG_Sequence: return "JTAG_Sequence";
+    case ID_DAP_JTAG_Configure: return "JTAG_Configure";
+    case ID_DAP_JTAG_IDCODE: return "JTAG_IDCODE";
+    case ID_DAP_SWO_Transport: return "SWO_Transport";
+    case ID_DAP_SWO_Mode: return "SWO_Mode";
+    case ID_DAP_SWO_Baudrate: return "SWO_Baudrate";
+    case ID_DAP_SWO_Control: return "SWO_Control";
+    case ID_DAP_SWO_Status: return "SWO_Status";
+    case ID_DAP_SWO_ExtendedStatus: return "SWO_ExtendedStatus";
+    case ID_DAP_SWO_Data: return "SWO_Data";
+    case ID_DAP_UART_Transport: return "UART_Transport";
+    case ID_DAP_UART_Configure: return "UART_Configure";
+    case ID_DAP_UART_Control: return "UART_Control";
+    case ID_DAP_UART_Status: return "UART_Status";
+    case ID_DAP_UART_Transfer: return "UART_Transfer";
+    case ID_DAP_QueueCommands: return "QueueCommands";
+    case ID_DAP_ExecuteCommands: return "ExecuteCommands";
+    default:
+      if ((cmd >= ID_DAP_Vendor0) && (cmd <= ID_DAP_Vendor31)) {
+        return "Vendor";
+      } else if ((cmd >= ID_DAP_VendorExFirst) && (cmd <= ID_DAP_VendorExLast)) {
+        return "VendorEx";
+      } else if (cmd == ID_DAP_Invalid) {
+        return "Invalid";
+      }
+      return "Unknown";
+  }
+}
+
 // Process DAP command request and prepare response
 //   request:  pointer to request data
 //   response: pointer to response data
@@ -1740,6 +1791,10 @@ __WEAK uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *respon
 //             number of bytes in request (upper 16 bits)
 uint32_t DAP_ProcessCommand(const uint8_t *request, uint8_t *response) {
   uint32_t num;
+  uint8_t cmd_id = *request;
+  
+  // Log the command being processed
+  ESP_LOGI(TAG, "Processing DAP command: 0x%02X (%s)", cmd_id, DAP_GetCommandName(cmd_id));
 
   if ((*request >= ID_DAP_Vendor0) && (*request <= ID_DAP_Vendor31)) {
     return DAP_ProcessVendorCommand(request, response);

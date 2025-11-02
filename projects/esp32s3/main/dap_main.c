@@ -40,15 +40,15 @@
                                USBD_WEBUSB_DESC_LEN * USBD_WEBUSB_ENABLE + \
                                USBD_WINUSB_DESC_LEN * USBD_WINUSB_ENABLE)
 
-#define USB_CONFIG_SIZE (9 + CMSIS_DAP_INTERFACE_SIZE + CDC_ACM_DESCRIPTOR_LEN + \
+#define USB_CONFIG_SIZE (9 + CMSIS_DAP_INTERFACE_SIZE + CDC_ACM_DESCRIPTOR_LEN*CONFIG_CHERRYDAP_CDC_NUM + \
                          CONFIG_CHERRYDAP_USE_CUSTOM_HID * CUSTOM_HID_LEN +      \
                          CONFIG_CHERRYDAP_USE_MSC * MSC_DESCRIPTOR_LEN + USBD_WEBUSB_ENABLE * 9)
 
-#define INTF_NUM (1 + 2 + CONFIG_CHERRYDAP_USE_CUSTOM_HID + CONFIG_CHERRYDAP_USE_MSC + USBD_WEBUSB_ENABLE)
+#define INTF_NUM (1 + 2 * CONFIG_CHERRYDAP_CDC_NUM + CONFIG_CHERRYDAP_USE_CUSTOM_HID + CONFIG_CHERRYDAP_USE_MSC + USBD_WEBUSB_ENABLE)
 
-#define MSC_INTF_NUM (3 + CONFIG_CHERRYDAP_USE_CUSTOM_HID)
+#define MSC_INTF_NUM (1 + 2 * CONFIG_CHERRYDAP_CDC_NUM + CONFIG_CHERRYDAP_USE_CUSTOM_HID)
 
-#define WEBUSB_INTF_NUM (3 + CONFIG_CHERRYDAP_USE_CUSTOM_HID + CONFIG_CHERRYDAP_USE_MSC)
+#define WEBUSB_INTF_NUM (1 + 2 * CONFIG_CHERRYDAP_CDC_NUM + CONFIG_CHERRYDAP_USE_CUSTOM_HID + CONFIG_CHERRYDAP_USE_MSC)
 
 #define WEBUSB_URL_STRINGS                                 \
     'c', 'h', 'e', 'r', 'r', 'y', 'd', 'a', 'p', '.', 'c', 'h', 'e', 'r', 'r', 'y', '-', 'e', 'm', 'b', 'e', 'd', 'd', 'e', 'd', '.', 'o', 'r', 'g',
@@ -202,7 +202,11 @@ static const uint8_t config_descriptor[] = {
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_OUT_EP, USB_ENDPOINT_TYPE_BULK, DAP_PACKET_SIZE, 0x00),
     /* Endpoint IN 1 */
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_IN_EP, USB_ENDPOINT_TYPE_BULK, DAP_PACKET_SIZE, 0x00),
+
     CDC_ACM_DESCRIPTOR_INIT(0x01, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, DAP_PACKET_SIZE, 0x00),
+#if CONFIG_CHERRYDAP_USE_CDC2
+    CDC_ACM_DESCRIPTOR_INIT(0x03, CDC2_INT_EP, CDC2_OUT_EP, CDC2_IN_EP, DAP_PACKET_SIZE, 0x00),
+#endif
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
     HID_DESC(),
 #endif
@@ -223,6 +227,9 @@ static const uint8_t other_speed_config_descriptor[] = {
     /* Endpoint IN 1 */
     USB_ENDPOINT_DESCRIPTOR_INIT(DAP_IN_EP, USB_ENDPOINT_TYPE_BULK, DAP_PACKET_SIZE, 0x00),
     CDC_ACM_DESCRIPTOR_INIT(0x01, CDC_INT_EP, CDC_OUT_EP, CDC_IN_EP, DAP_PACKET_SIZE, 0x00),
+#if CONFIG_CHERRYDAP_USE_CDC2
+    CDC_ACM_DESCRIPTOR_INIT(0x03, CDC2_INT_EP, CDC2_OUT_EP, CDC2_IN_EP, DAP_PACKET_SIZE, 0x00),
+#endif
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
     HID_DESC(),
 #endif
@@ -476,6 +483,16 @@ struct usbd_endpoint cdc_in_ep = {
     .ep_cb = usbd_cdc_acm_bulk_in
 };
 
+#if CONFIG_CHERRYDAP_USE_CDC2
+struct usbd_endpoint cdc2_out_ep = {
+    .ep_addr = CDC2_OUT_EP,
+    .ep_cb = usbd_cdc_acm_bulk_out
+};
+struct usbd_endpoint cdc2_in_ep = {
+    .ep_addr = CDC2_IN_EP,
+    .ep_cb = usbd_cdc_acm_bulk_in
+};
+#endif
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
 struct usbd_endpoint hid_custom_in_ep = {
         .ep_addr = HID_IN_EP,
@@ -491,6 +508,10 @@ struct usbd_endpoint hid_custom_out_ep = {
 struct usbd_interface dap_intf;
 struct usbd_interface intf1;
 struct usbd_interface intf2;
+#if CONFIG_CHERRYDAP_USE_CDC2
+struct usbd_interface intf4;
+struct usbd_interface intf5;
+#endif
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
 struct usbd_interface hid_intf;
 #endif
@@ -547,6 +568,12 @@ void chry_dap_init(uint8_t busid, uint32_t reg_base)
     usbd_add_endpoint(0, &cdc_out_ep);
     usbd_add_endpoint(0, &cdc_in_ep);
 
+#if CONFIG_CHERRYDAP_USE_CDC2
+    usbd_add_interface(0, usbd_cdc_acm_init_intf(0, &intf4));
+    usbd_add_interface(0, usbd_cdc_acm_init_intf(0, &intf5));
+    usbd_add_endpoint(0, &cdc2_out_ep);
+    usbd_add_endpoint(0, &cdc2_in_ep);
+#endif
 #if CONFIG_CHERRYDAP_USE_CUSTOM_HID
     /*!< hid */
     usbd_add_interface(0, usbd_hid_init_intf(0, &hid_intf, hid_custom_report_desc, HID_CUSTOM_REPORT_DESC_SIZE));
@@ -754,7 +781,7 @@ static bool fat_mounted = false;
     // Configure VFS FAT mount
     esp_vfs_fat_mount_config_t mount_config = {
         .max_files = 4,                    // Maximum number of files open at the same time
-        .format_if_mount_failed = true,    // Format the partition if mount fails
+        .format_if_mount_failed = false,    // Format the partition if mount fails
         .allocation_unit_size = CONFIG_WL_SECTOR_SIZE  // Use wear leveling sector size
     };
 
@@ -838,7 +865,7 @@ void usbd_msc_get_cap(uint8_t busid, uint8_t lun, uint32_t *block_num, uint32_t 
         *block_num = 0;  // No partition available
     }
     
-    ESP_LOGD(TAG, "MSC capacity: %lu blocks x %lu bytes = %lu bytes", 
+    ESP_LOGI(TAG, "MSC capacity: %lu blocks x %lu bytes = %lu bytes", 
              *block_num, *block_size, (*block_num) * (*block_size));
 }
 /**
@@ -898,36 +925,36 @@ int usbd_msc_sector_write(uint8_t busid, uint8_t lun, uint32_t sector, uint8_t *
         return -1;
     }
     
-    // // Calculate offset in partition
-    // uint32_t offset = sector * BLOCK_SIZE;
+    // Calculate offset in partition
+    uint32_t offset = sector * BLOCK_SIZE;
     
-    // // Check bounds
-    // if (offset + length > msc_partition->size) {
-    //     ESP_LOGE(TAG, "Write out of bounds: offset=%lu, length=%lu, size=%lu", 
-    //              offset, length, msc_partition->size);
-    //     return -1;
-    // }
+    // Check bounds
+    if (offset + length > msc_partition->size) {
+        ESP_LOGE(TAG, "Write out of bounds: offset=%lu, length=%lu, size=%lu", 
+                 offset, length, msc_partition->size);
+        return -1;
+    }
     
-    // // Erase before write (flash requires erase before write)
-    // // Note: esp_partition_write will handle erase internally if needed,
-    // // but for proper flash lifecycle, we should erase sectors explicitly
-    // // Calculate aligned erase range (must be SPI_FLASH_SEC_SIZE aligned)
-    // uint32_t erase_start = (offset / SPI_FLASH_SEC_SIZE) * SPI_FLASH_SEC_SIZE;
-    // uint32_t erase_end = ((offset + length + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE) * SPI_FLASH_SEC_SIZE;
-    // uint32_t erase_size = erase_end - erase_start;
+    // Erase before write (flash requires erase before write)
+    // Note: esp_partition_write will handle erase internally if needed,
+    // but for proper flash lifecycle, we should erase sectors explicitly
+    // Calculate aligned erase range (must be SPI_FLASH_SEC_SIZE aligned)
+    uint32_t erase_start = (offset / SPI_FLASH_SEC_SIZE) * SPI_FLASH_SEC_SIZE;
+    uint32_t erase_end = ((offset + length + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE) * SPI_FLASH_SEC_SIZE;
+    uint32_t erase_size = erase_end - erase_start;
     
-    // esp_err_t ret = esp_partition_erase_range(msc_partition, erase_start, erase_size);
-    // if (ret != ESP_OK) {
-    //     ESP_LOGE(TAG, "Failed to erase partition at sector %lu: %s", sector, esp_err_to_name(ret));
-    //     return -1;
-    // }
+    esp_err_t ret = esp_partition_erase_range(msc_partition, erase_start, erase_size);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to erase partition at sector %lu: %s", sector, esp_err_to_name(ret));
+        return -1;
+    }
     
-    // // Write to partition
-    // ret = esp_partition_write(msc_partition, offset, buffer, length);
-    // if (ret != ESP_OK) {
-    //     ESP_LOGE(TAG, "Failed to write partition at sector %lu: %s", sector, esp_err_to_name(ret));
-    //     return -1;
-    // }
+    // Write to partition
+    ret = esp_partition_write(msc_partition, offset, buffer, length);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to write partition at sector %lu: %s", sector, esp_err_to_name(ret));
+        return -1;
+    }
     
     ESP_LOGI(TAG, "Wrote %lu bytes to sector %lu (offset 0x%lx)", length, sector, 0);
     return 0;

@@ -35,7 +35,7 @@ typedef struct
  * @param len packet length
  * @return 0 on Success, other on failed.
  */
-int el_handshake_process(int fd, void* buffer, size_t len);
+extern int el_handshake_process(int fd, void* buffer, size_t len);
 
 
 /**
@@ -44,12 +44,12 @@ int el_handshake_process(int fd, void* buffer, size_t len);
  * @param buffer dap data buffer
  * @param len dap data length
  */
-void el_dap_data_process(void* buffer, size_t len);
+extern void el_dap_data_process(void* buffer, size_t len);
 
 
-int el_dap_work(uint8_t* base, size_t len);
+extern int el_dap_work(uint8_t* base, size_t len);
 
-void el_process_buffer_malloc();
-void el_process_buffer_free();
+extern void el_process_buffer_malloc();
+extern void el_process_buffer_free();
 
 #endif

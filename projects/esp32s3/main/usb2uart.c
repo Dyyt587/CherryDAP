@@ -6,13 +6,14 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "usb_log.h"
+#include "port_common.h"
 
 #define PATTERN_CHR_NUM    (3)         /*!< Set the number of consecutive and identical characters received by receiver which defines a UART pattern*/
 #define EX_UART_NUM UART_NUM_1
 #define BUF_SIZE (1024)
 #define RD_BUF_SIZE (BUF_SIZE)
 static const char *TAG = "usb2uart";
-static QueueHandle_t uart0_queue;
+static QueueHandle_t uart1_queue;
 static TaskHandle_t *uart_task_handle = NULL;
 
 void chry_dap_usb2uart_uart_config_callback(struct cdc_line_coding *line_coding);
@@ -41,7 +42,7 @@ static void uart_event_task(void *pvParameters)
         }
         vTaskDelay(1);
         //Waiting for UART event.
-        if (xQueueReceive(uart0_queue, (void *)&event, (TickType_t)1)) {
+        if (xQueueReceive(uart1_queue, (void *)&event, (TickType_t)1)) {
             bzero(dtmp, RD_BUF_SIZE);
             // ESP_LOGI(TAG, "uart[%d] event: %d", EX_UART_NUM, event.type);
             switch (event.type) {
@@ -62,7 +63,7 @@ static void uart_event_task(void *pvParameters)
                 // The ISR has already reset the rx FIFO,
                 // As an example, we directly flush the rx buffer here in order to read more data.
                 uart_flush_input(EX_UART_NUM);
-                xQueueReset(uart0_queue);
+                xQueueReset(uart1_queue);
                 break;
             //Event of UART ring buffer full
             case UART_BUFFER_FULL:
@@ -70,7 +71,7 @@ static void uart_event_task(void *pvParameters)
                 // If buffer full happened, you should consider increasing your buffer size
                 // As an example, we directly flush the rx buffer here in order to read more data.
                 uart_flush_input(EX_UART_NUM);
-                xQueueReset(uart0_queue);
+                xQueueReset(uart1_queue);
                 break;
             //Event of UART RX break detected
             case UART_BREAK:
@@ -81,7 +82,7 @@ static void uart_event_task(void *pvParameters)
                 //     bDataBits: 8
                 // };
                 // chry_dap_usb2uart_uart_config_callback(&line_coding);
-                ESP_LOGI(TAG, "uart rx break");
+                //ESP_LOGI(TAG, "uart rx break");
                 break;
             //Event of UART parity check error
             case UART_PARITY_ERR:
@@ -132,7 +133,7 @@ void uartx_preinit(void)
         bDataBits: 8
     };
     chry_dap_usb2uart_uart_config_callback(&line_coding);
-    xTaskCreate(uart_event_task, "uart_event_task", 3072, NULL, 12, uart_task_handle);
+    xTaskCreatePinnedToCore(uart_event_task, "uart_event_task", 3072, NULL, 12, uart_task_handle,0);
 }
 
 static volatile bool lock = 0;
@@ -158,7 +159,7 @@ void chry_dap_usb2uart_uart_config_callback(struct cdc_line_coding *line_coding)
     uart_param_config(UART_NUM_1, &uart_config);
     uart_set_pin(UART_NUM_1, DAP_UART_TX, DAP_UART_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     if (!uart_is_driver_installed(UART_NUM_1))
-        uart_driver_install(UART_NUM_1, CONFIG_UARTRX_RINGBUF_SIZE, CONFIG_USBRX_RINGBUF_SIZE, 20, &uart0_queue, 0);
+        uart_driver_install(UART_NUM_1, CONFIG_UARTRX_RINGBUF_SIZE, CONFIG_USBRX_RINGBUF_SIZE, 20, &uart1_queue, 0);
     //Set uart pattern detect function.
     // uart_enable_pattern_det_baud_intr(UART_NUM_1, '+', 3, 9, 0, 0);
     //Reset the pattern queue length to record at most 20 pattern positions.

@@ -331,6 +331,10 @@ __STATIC_INLINE uint8_t DAP_GetProductFirmwareVersionString(char *str)
 #define PIN_LED_CONNECTED _                     // won't be used
 #define PIN_LED_RUNNING GPIO_LED_RUNNING_STATUS // won't be used
 
+#define PIN_LED_CONNECTED _                     // won't be used
+#define PIN_LED_RUNNING GPIO_LED_RUNNING_STATUS // won't be used
+
+
 //**************************************************************************************************
 /**
 \defgroup DAP_Config_PortIO_gr CMSIS-DAP Hardware I/O Pin Access

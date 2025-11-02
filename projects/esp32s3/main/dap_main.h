@@ -2,7 +2,7 @@
  * @Author: Dyyt587 67887002+Dyyt587@users.noreply.github.com
  * @Date: 2025-10-30 15:49:44
  * @LastEditors: Dyyt587 67887002+Dyyt587@users.noreply.github.com
- * @LastEditTime: 2025-10-31 22:58:48
+ * @LastEditTime: 2025-11-01 19:16:54
  * @FilePath: \esp32s3\main\dap_main.h
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -25,11 +25,16 @@
 
 #define CDC_INT_EP 0x83
 
-#define MSC_IN_EP  0x84
-#define MSC_OUT_EP 0x04
+#define CDC2_IN_EP  0x84
+#define CDC2_OUT_EP 0x04
 
-#define HID_IN_EP  0x85
-#define HID_OUT_EP 0x04
+#define CDC2_INT_EP 0x85
+
+#define MSC_IN_EP  0x86
+#define MSC_OUT_EP 0x06
+
+#define HID_IN_EP  0x87
+#define HID_OUT_EP 0x07
 
 #define USBD_VID           0x0D28
 #define USBD_PID           0x0204
@@ -56,11 +61,21 @@
 #define CONFIG_USBRX_RINGBUF_SIZE  (8 * 1024)
 
 #ifndef CONFIG_CHERRYDAP_USE_MSC
-#define CONFIG_CHERRYDAP_USE_MSC 1
+#define CONFIG_CHERRYDAP_USE_MSC 0
 #endif
 
 #ifndef CONFIG_CHERRYDAP_USE_CUSTOM_HID
 #define CONFIG_CHERRYDAP_USE_CUSTOM_HID 0
+#endif
+
+#ifndef CONFIG_CHERRYDAP_USE_CDC2
+#define CONFIG_CHERRYDAP_USE_CDC2 0
+#endif
+
+#if CONFIG_CHERRYDAP_USE_CDC2
+#define CONFIG_CHERRYDAP_CDC_NUM (2)
+#else
+#define CONFIG_CHERRYDAP_CDC_NUM (1)
 #endif
 
 #ifdef __cplusplus

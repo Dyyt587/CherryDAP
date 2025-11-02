@@ -1,12 +1,12 @@
 #include "elaphureLink/elaphureLink_protocol.h"
 
-// #include "main/DAP_handle.h"
+#include "main/DAP_handle.h"
 
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
-
+#include "esp_log.h"
 extern int kRestartDAPHandle;
 extern int kSock;
 extern int usbip_network_send(int s, const void *dataptr, size_t size, int flags);
@@ -94,6 +94,7 @@ int el_dap_work(uint8_t* base, size_t len)
         if (ret <= 0)
             return ret;
         el_dap_data_process(base, ret);
+        ESP_LOGI("ELAPHURELINK", "el_dap_work recv %d bytes", ret);
     }
 
     return 0;
